@@ -121,7 +121,7 @@ BEGIN
         fechaSegVenc DATE NOT NULL,
         
         CONSTRAINT PK_Expensa PRIMARY KEY (id_expensa),
-        CONSTRAINT FK_Expensa FOREIGN KEY (id_consorcio) REFERENCES ref.Consorcio(id_consorcio)
+        CONSTRAINT FK_Expensa FOREIGN KEY (id_consorcio) REFERENCES adm.Consorcio(id_consorcio)
 ); END
 
 IF OBJECT_ID('fin.Factura') IS NULL
@@ -199,3 +199,29 @@ BEGIN
         CONSTRAINT CHK_EnviadoA1 CHECK (medio_Comunicacion_Prop IN ('EMAIL','TELEFONO','IMPRESO')),
         CONSTRAINT CHK_EnviadoA2 CHECK (medio_Comunicacion_Inq IN ('EMAIL','TELEFONO','IMPRESO'))
 );END
+
+IF OBJECT_ID('adm.Propietario') IS NULL
+BEGIN
+    CREATE TABLE adm.Propietario(
+        id_prop INT IDENTITY(1,1),
+        nombre NVARCHAR(30) NOT NULL,
+        apellido NVARCHAR(30) NOT NULL,
+        dni INT NOT NULL,
+        email NVARCHAR(30) NOT NULL,
+        telefono INT NOT NULL,
+        cbu CHAR(22) NOT NULL,
+        
+); END
+
+IF OBJECT_ID('adm.Inquilino') IS NULL
+BEGIN
+    CREATE TABLE adm.Inquilino(
+        id_inq INT IDENTITY(1,1),
+        nombre NVARCHAR(30) NOT NULL,
+        apellido NVARCHAR(30) NOT NULL,
+        dni INT NOT NULL,
+        email NVARCHAR(30) NOT NULL,
+        telefono INT NOT NULL,
+        cbu CHAR(22) NOT NULL
+        
+); END
