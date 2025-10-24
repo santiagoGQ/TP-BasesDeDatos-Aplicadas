@@ -107,7 +107,7 @@ BEGIN
         precio_bauleraM2 DECIMAL(10,2) NOT NULL,
         
         CONSTRAINT PK_consorcio PRIMARY KEY (id_consorcio),
-        CONSTRAINT FK_consorcio FOREIGN KEY (id_tipo_servlimpieza) 
+        CONSTRAINT FK_serv_limp_consorcio FOREIGN KEY (id_tipo_servlimpieza) 
         REFERENCES ref.TipoServicioLimpieza(id_tipo_servlimpieza)
 ); END
 
@@ -121,7 +121,7 @@ BEGIN
         fechaSegVenc DATE NOT NULL,
         
         CONSTRAINT PK_Expensa PRIMARY KEY (id_expensa),
-        CONSTRAINT FK_Expensa FOREIGN KEY (id_consorcio) REFERENCES adm.Consorcio(id_consorcio)
+        CONSTRAINT FK_Consorcio_Expensa FOREIGN KEY (id_consorcio) REFERENCES adm.Consorcio(id_consorcio)
 ); END
 
 IF OBJECT_ID('fin.Factura') IS NULL
@@ -135,7 +135,7 @@ BEGIN
         importe DECIMAL(10,2) NOT NULL,
 
         CONSTRAINT PK_Factura PRIMARY KEY (id_factura),
-        CONSTRAINT FK_Factura FOREIGN KEY (id_proveedor) REFERENCES ref.Proveedor(id_proveedor)
+        CONSTRAINT FK_Proveedor_Factura FOREIGN KEY (id_proveedor) REFERENCES ref.Proveedor(id_proveedor)
 );END
 
 IF OBJECT_ID('gasto.Limpieza') IS NULL
@@ -146,8 +146,8 @@ BEGIN
         descripcion varchar(100),
 
         CONSTRAINT PK_GastoLimpieza PRIMARY KEY (id_expensa),
-        CONSTRAINT FK_GastoLimpieza1 FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
-        CONSTRAINT FK_GastoLimpieza2 FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura)
+        CONSTRAINT FK_Expensa_GastoLimpieza FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
+        CONSTRAINT FK_Factura_GastoLimpieza FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura)
 );END
 
 IF OBJECT_ID('gasto.Seguro') IS NULL
@@ -159,8 +159,8 @@ BEGIN
         descripcion varchar(100),
 
         CONSTRAINT PK_GastoSeguro PRIMARY KEY (id_seguro),
-        CONSTRAINT FK_GastoSeguro1 FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
-        CONSTRAINT FK_GastoSeguro2 FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura)
+        CONSTRAINT FK_Expensa_GastoSeguro FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
+        CONSTRAINT FK_Factura_GastoSeguro FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura)
 );END
 
 IF OBJECT_ID('gasto.Administracion') IS NULL
@@ -172,8 +172,8 @@ BEGIN
         descripcion varchar(100),
 
         CONSTRAINT PK_GastoAdmin PRIMARY KEY (id_admin),
-        CONSTRAINT FK_GastoAdmin1 FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
-        CONSTRAINT FK_GastoAdmin2 FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura)
+        CONSTRAINT FK_Expensa_GastoAdmin FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
+        CONSTRAINT FK_Factura_GastoAdmin FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura)
 );END
 
 IF OBJECT_ID('fin.ResumenBancarioCSV') IS NULL
@@ -183,7 +183,7 @@ BEGIN
         id_factura INT NOT NULL,
 
         CONSTRAINT PK_ResumenCSV PRIMARY KEY (id_expensa),
-        CONSTRAINT FK_ResumenCSV FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa)
+        CONSTRAINT FK_Expensa_ResumenCSV FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa)
 );END
 
 IF OBJECT_ID('ref.EnviadoA') IS NULL
@@ -195,7 +195,7 @@ BEGIN
         medio_Comunicacion_Inq VARCHAR(9) NOT NULL,
     
         CONSTRAINT PK_EnviadoA PRIMARY KEY (id_expensa),
-        CONSTRAINT FK_EnviadoA FOREIGN KEY (id_uni_func) REFERENCES adm.UnidadFuncional(id_uni_func),
+        CONSTRAINT FK_UF_EnviadoA FOREIGN KEY (id_uni_func) REFERENCES adm.UnidadFuncional(id_uni_func),
         CONSTRAINT CHK_EnviadoA1 CHECK (medio_Comunicacion_Prop IN ('EMAIL','TELEFONO','IMPRESO')),
         CONSTRAINT CHK_EnviadoA2 CHECK (medio_Comunicacion_Inq IN ('EMAIL','TELEFONO','IMPRESO'))
 );END
