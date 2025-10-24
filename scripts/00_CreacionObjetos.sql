@@ -45,43 +45,157 @@ GO
 --          DetalleGastoSeguro, DetalleGastoAdministracion, DetalleGastoLimpieza y DetalleMantenimientoBancario.
 IF SCHEMA_ID('gasto') IS NULL
 BEGIN
-    EXEC('CREATE SCHEMA fin');
+    EXEC('CREATE SCHEMA gasto');
 END
 GO
 
 --Esquema ref (Referencias) vinculado a tablas Proveedor, TipoServicioPublico, TipoServicioLimpieza y EnviadoA.
 IF SCHEMA_ID('ref') IS NULL
 BEGIN
-    EXEC('CREATE SCHEMA fin');
+    EXEC('CREATE SCHEMA ref');
 END
 GO
 
+/*
+IF OBJECT_ID('') IS NULL
+BEGIN
+    CREATE TABLE (
+    
+    CONSTRAINT PK_    
+);END
+*/
 ----------------CREACION DE TABLAS----------------
-
---ref
 IF OBJECT_ID('ref.TipoServicioLimpieza') IS NULL
 BEGIN
     CREATE TABLE ref.TipoServicioLimpieza(
-        id_tipo_servlimpieza INT IDENTITY(1,1),
-        nombre VARCHAR(25)
+        id_tipo_servLimpieza INT IDENTITY(1,1) NOT NULL,
+        nombre VARCHAR(45) NOT NULL,
 
-        CONSTRAINT PK_TipoServicioLimpieza PRIMARY KEY (id_tipo_servlimpieza)
+        CONSTRAINT PK_TipoServicioLimpieza PRIMARY KEY (id_tipo_servLimpieza)
 );END
 
+IF OBJECT_ID('ref.TipoServicioPublico') IS NULL
+BEGIN
+    CREATE TABLE ref.TipoServicioPublico( 
+        id_tipo_servPublico INT IDENTITY(1,1) NOT NULL,
+        nombre VARCHAR(45) NOT NULL,
 
+        CONSTRAINT PK_TipoServicioPublico PRIMARY KEY (id_tipo_servPublico)
+);END
+
+IF OBJECT_ID('ref.Proveedor') IS NULL
+BEGIN
+    CREATE TABLE ref.Proveedor(
+        id_proveedor INT IDENTITY(1,1) NOT NULL,
+        razon_social VARCHAR(45),
+        cuit SMALLINT NOT NULL,
+        email VARCHAR(100),
+        telefono VARCHAR(10),
+
+        CONSTRAINT PK_Proveedor PRIMARY KEY (id_proveedor)
+); END
 
 IF OBJECT_ID('adm.Consorcio') IS NULL
 BEGIN
     CREATE TABLE adm.Consorcio(
-        id_consorcio INT IDENTITY(1,1),
-        id_tipo_servlimpieza INT,
-        nombre VARCHAR(25),
-        direccion VARCHAR(75),
-        metros_totales SMALLINT,
-        cantidad_uf TINYINT,
-        precio_bauleraM2 DECIMAL(10,2)
+        id_consorcio INT IDENTITY(1,1) NOT NULL,
+        id_tipo_servlimpieza INT NOT NULL,
+        nombre VARCHAR(25) NOT NULL,
+        direccion VARCHAR(75) NOT NULL,
+        metros_totales SMALLINT NOT NULL,
+        cantidad_uf TINYINT NOT NULL,
+        precio_bauleraM2 DECIMAL(10,2) NOT NULL,
         
-        CONSTRAINT PK_consorcio PRIMARY KEY (id_consorcio)
-        CONSTRAINT FK_consorcio 
-        FOREIGN KEY (id_tipo_servlimpieza) REFERENCES ref.TipoServicioLimpieza(id_tipo_servlimpieza)
+        CONSTRAINT PK_consorcio PRIMARY KEY (id_consorcio),
+        CONSTRAINT FK_consorcio FOREIGN KEY (id_tipo_servlimpieza) 
+        REFERENCES ref.TipoServicioLimpieza(id_tipo_servlimpieza)
 ); END
+
+IF OBJECT_ID('adm.Expensa') IS NULL
+BEGIN
+    CREATE TABLE adm.Expensa(
+        id_expensa INT IDENTITY(1,1) NOT NULL,
+        id_consorcio INT NOT NULL,
+        fechaGenerado DATE NOT NULL,
+        fechaPrimerVenc DATE NOT NULL,
+        fechaSegVenc DATE NOT NULL,
+        
+        CONSTRAINT PK_Expensa PRIMARY KEY (id_expensa),
+        CONSTRAINT FK_Expensa FOREIGN KEY (id_consorcio) REFERENCES ref.Consorcio(id_consorcio)
+); END
+
+IF OBJECT_ID('fin.Factura') IS NULL
+BEGIN
+    CREATE TABLE fin.Factura(
+        id_factura INT IDENTITY(1,1) NOT NULL,
+        id_proveedor INT NOT NULL,
+        nro_Factura VARCHAR(15) NOT NULL,
+        fecha_Emision DATE NOT NULL,
+        fecha_Vencimiento DATE NOT NULL,
+        importe DECIMAL(10,2) NOT NULL,
+
+        CONSTRAINT PK_Factura PRIMARY KEY (id_factura),
+        CONSTRAINT FK_Factura FOREIGN KEY (id_proveedor) REFERENCES ref.Proveedor(id_proveedor)
+);END
+
+IF OBJECT_ID('gasto.Limpieza') IS NULL
+BEGIN
+    CREATE TABLE gasto.Limpieza(
+        id_expensa INT NOT NULL,
+        id_factura INT NOT NULL,
+        descripcion varchar(100),
+
+        CONSTRAINT PK_GastoLimpieza PRIMARY KEY (id_expensa),
+        CONSTRAINT FK_GastoLimpieza1 FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
+        CONSTRAINT FK_GastoLimpieza2 FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura)
+);END
+
+IF OBJECT_ID('gasto.Seguro') IS NULL
+BEGIN
+    CREATE TABLE gasto.Seguro(
+        id_seguro INT IDENTITY(1,1) NOT NULL,
+        id_expensa INT NOT NULL,
+        id_factura INT NOT NULL,
+        descripcion varchar(100),
+
+        CONSTRAINT PK_GastoSeguro PRIMARY KEY (id_seguro),
+        CONSTRAINT FK_GastoSeguro1 FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
+        CONSTRAINT FK_GastoSeguro2 FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura)
+);END
+
+IF OBJECT_ID('gasto.Administracion') IS NULL
+BEGIN
+    CREATE TABLE gasto.Administracion(
+        id_admin INT IDENTITY(1,1) NOT NULL,
+        id_expensa INT NOT NULL,
+        id_factura INT NOT NULL,
+        descripcion varchar(100),
+
+        CONSTRAINT PK_GastoAdmin PRIMARY KEY (id_admin),
+        CONSTRAINT FK_GastoAdmin1 FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
+        CONSTRAINT FK_GastoAdmin2 FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura)
+);END
+
+IF OBJECT_ID('fin.ResumenBancarioCSV') IS NULL
+BEGIN
+    CREATE TABLE fin.ResumenBancarioCSV(
+        id_expensa INT NOT NULL,
+        id_factura INT NOT NULL,
+
+        CONSTRAINT PK_ResumenCSV PRIMARY KEY (id_expensa),
+        CONSTRAINT FK_ResumenCSV FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa)
+);END
+
+IF OBJECT_ID('ref.EnviadoA') IS NULL
+BEGIN
+    CREATE TABLE ref.EnviadoA(
+        id_expensa INT IDENTITY(1,1) NOT NULL,
+        id_uni_func INT NOT NULL,
+        medio_Comunicacion_Prop VARCHAR(9) NOT NULL,
+        medio_Comunicacion_Inq VARCHAR(9) NOT NULL,
+    
+        CONSTRAINT PK_EnviadoA PRIMARY KEY (id_expensa),
+        CONSTRAINT FK_EnviadoA FOREIGN KEY (id_uni_func) REFERENCES adm.UnidadFuncional(id_uni_func),
+        CONSTRAINT CHK_EnviadoA1 CHECK (medio_Comunicacion_Prop IN ('EMAIL','TELEFONO','IMPRESO')),
+        CONSTRAINT CHK_EnviadoA2 CHECK (medio_Comunicacion_Inq IN ('EMAIL','TELEFONO','IMPRESO'))
+);END
