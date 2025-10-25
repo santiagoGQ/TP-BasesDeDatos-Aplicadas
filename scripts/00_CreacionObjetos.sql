@@ -224,7 +224,6 @@ IF OBJECT_ID('fin.ResumenBancarioCSV') IS NULL
 BEGIN
     CREATE TABLE fin.ResumenBancarioCSV(
         id_expensa INT NOT NULL,
-        id_factura INT NOT NULL,
 
         CONSTRAINT PK_ResumenCSV PRIMARY KEY (id_expensa),
         CONSTRAINT FK_Expensa_ResumenCSV FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa)
@@ -242,4 +241,19 @@ BEGIN
         CONSTRAINT FK_UF_EnviadoA FOREIGN KEY (id_uni_func) REFERENCES adm.UnidadFuncional(id_uni_func),
         CONSTRAINT CHK_EnviadoA1 CHECK (medio_Comunicacion_Prop IN ('EMAIL','TELEFONO','IMPRESO')),
         CONSTRAINT CHK_EnviadoA2 CHECK (medio_Comunicacion_Inq IN ('EMAIL','TELEFONO','IMPRESO'))
+);END
+
+IF OBJECT_ID('fin.Pago') IS NULL
+BEGIN
+    CREATE TABLE fin.Pago(
+        id_resumen INT NOT NULL,
+        id_pago INT NOT NULL,
+        id_uni_func INT,
+        fecha DATETIME NOT NULL,
+        cuenta_origen CHAR(22) NOT NULL,
+        monto DECIMAL(7,2) NOT NULL,
+
+        CONSTRAINT PK_Pago PRIMARY KEY (id_resumen, id_pago),
+        CONSTRAINT FK_Resumen_Pago FOREIGN KEY (id_resumen) REFERENCES fin.ResumenBancarioCSV(id_expensa),
+        CONSTRAINT FK_UniFunc_Pago FOREIGN KEY (id_uni_func) REFERENCES adm.UnidadFuncional(id_uni_func)
 );END
