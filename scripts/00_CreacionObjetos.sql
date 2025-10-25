@@ -49,13 +49,6 @@ BEGIN
 END
 GO
 
---Esquema ref (Referencias) vinculado a tablas Proveedor, TipoServicioPublico, TipoServicioLimpieza y EnviadoA.
-IF SCHEMA_ID('ref') IS NULL
-BEGIN
-    EXEC('CREATE SCHEMA ref');
-END
-GO
-
 /*
 IF OBJECT_ID('') IS NULL
 BEGIN
@@ -65,27 +58,27 @@ BEGIN
 );END
 */
 ----------------CREACION DE TABLAS----------------
-IF OBJECT_ID('ref.TipoServicioLimpieza') IS NULL
+IF OBJECT_ID('adm.TipoServicioLimpieza') IS NULL
 BEGIN
-    CREATE TABLE ref.TipoServicioLimpieza(
+    CREATE TABLE adm.TipoServicioLimpieza(
         id_tipo_servLimpieza INT IDENTITY(1,1) NOT NULL,
         nombre VARCHAR(45) NOT NULL,
 
         CONSTRAINT PK_TipoServicioLimpieza PRIMARY KEY (id_tipo_servLimpieza)
 );END
 
-IF OBJECT_ID('ref.TipoServicioPublico') IS NULL
+IF OBJECT_ID('adm.TipoServicioPublico') IS NULL
 BEGIN
-    CREATE TABLE ref.TipoServicioPublico( 
+    CREATE TABLE adm.TipoServicioPublico( 
         id_tipo_servPublico INT IDENTITY(1,1) NOT NULL,
         nombre VARCHAR(45) NOT NULL,
 
         CONSTRAINT PK_TipoServicioPublico PRIMARY KEY (id_tipo_servPublico)
 );END
 
-IF OBJECT_ID('ref.Proveedor') IS NULL
+IF OBJECT_ID('adm.Proveedor') IS NULL
 BEGIN
-    CREATE TABLE ref.Proveedor(
+    CREATE TABLE adm.Proveedor(
         id_proveedor INT IDENTITY(1,1) NOT NULL,
         razon_social VARCHAR(45),
         cuit SMALLINT NOT NULL,
@@ -108,7 +101,7 @@ BEGIN
         
         CONSTRAINT PK_consorcio PRIMARY KEY (id_consorcio),
         CONSTRAINT FK_serv_limp_consorcio FOREIGN KEY (id_tipo_servlimpieza) 
-        REFERENCES ref.TipoServicioLimpieza(id_tipo_servlimpieza)
+        REFERENCES adm.TipoServicioLimpieza(id_tipo_servlimpieza)
 ); END
 
 IF OBJECT_ID('adm.Expensa') IS NULL
@@ -135,7 +128,7 @@ BEGIN
         importe DECIMAL(10,2) NOT NULL,
 
         CONSTRAINT PK_Factura PRIMARY KEY (id_factura),
-        CONSTRAINT FK_Proveedor_Factura FOREIGN KEY (id_proveedor) REFERENCES ref.Proveedor(id_proveedor)
+        CONSTRAINT FK_Proveedor_Factura FOREIGN KEY (id_proveedor) REFERENCES adm.Proveedor(id_proveedor)
 );END
 
 IF OBJECT_ID('gasto.Limpieza') IS NULL
@@ -186,9 +179,9 @@ BEGIN
         CONSTRAINT FK_Expensa_ResumenCSV FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa)
 );END
 
---IF OBJECT_ID('ref.EnviadoA') IS NULL
+--IF OBJECT_ID('adm.EnviadoA') IS NULL
 --BEGIN
---    CREATE TABLE ref.EnviadoA(
+--    CREATE TABLE adm.EnviadoA(
 --        id_expensa INT IDENTITY(1,1) NOT NULL,
 --        id_uni_func INT NOT NULL,
 --        medio_Comunicacion_Prop VARCHAR(9) NOT NULL,
