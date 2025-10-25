@@ -1,3 +1,18 @@
+--------------------------------------------------
+-- BASES DE DATOS APLICADAS
+--  GRUPO 04
+--  INTEGRANTES
+--   CONDE, FRANCO
+--   GARAY QUINTERO, SANTIAGO
+--   SIMCIC, TOBIAS
+--------------------------------------------------
+
+---------CREACION DE LOS STORE PROCEDURES---------
+
+--Cambia a COM2900_G04
+USE COM2900_G04
+GO
+
 CREATE OR ALTER PROCEDURE adm.AgregarTipoServicioLimpieza 
 	@nombre VARCHAR(45)
 AS
