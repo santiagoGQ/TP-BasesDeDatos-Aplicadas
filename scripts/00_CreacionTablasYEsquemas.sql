@@ -83,7 +83,7 @@ BEGIN
         razon_social VARCHAR(45),
         cuit CHAR(11) NOT NULL,
         email NVARCHAR(50),
-        telefono VARCHAR(10),
+        telefono INT,
 
         CONSTRAINT PK_Proveedor PRIMARY KEY (id_proveedor)
 ); END

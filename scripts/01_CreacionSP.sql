@@ -29,3 +29,18 @@ BEGIN
 END
 GO
 
+CREATE OR ALTER PROCEDURE adm.AgregarProveedor
+	@razon_social VARCHAR(45),
+	@cuit CHAR(11),
+	@email NVARCHAR(50),
+	@telefono VARCHAR(10)
+AS
+BEGIN
+	DECLARE @email_formateado NVARCHAR(50)
+	SET @email_formateado = adm.fn_QuitarEspaciosEmail(@email)
+
+	INSERT INTO adm.Proveedor(razon_social, cuit, email, telefono) 
+		values (@razon_social, @cuit, @email_formateado, @telefono)
+END
+GO
+

@@ -13,7 +13,7 @@
 USE COM2900_G04
 GO
 
-CREATE FUNCTION adm.fn_QuitarEspaciosEmail(
+CREATE OR ALTER FUNCTION adm.fn_QuitarEspaciosEmail(
     @email NVARCHAR(50)
 )
 RETURNS NVARCHAR(50)
