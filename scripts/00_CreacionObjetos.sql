@@ -247,7 +247,7 @@ IF OBJECT_ID('fin.Pago') IS NULL
 BEGIN
     CREATE TABLE fin.Pago(
         id_resumen INT NOT NULL,
-        id_pago INT NOT NULL,
+        id_pago INT IDENTITY(1,1) NOT NULL,
         id_uni_func INT,
         fecha DATETIME NOT NULL,
         cuenta_origen CHAR(22) NOT NULL,
@@ -256,4 +256,19 @@ BEGIN
         CONSTRAINT PK_Pago PRIMARY KEY (id_resumen, id_pago),
         CONSTRAINT FK_Resumen_Pago FOREIGN KEY (id_resumen) REFERENCES fin.ResumenBancarioCSV(id_expensa),
         CONSTRAINT FK_UniFunc_Pago FOREIGN KEY (id_uni_func) REFERENCES adm.UnidadFuncional(id_uni_func)
+);END
+
+
+IF OBJECT_ID('fin.EstadoFinanciero') IS NULL
+BEGIN
+    CREATE TABLE fin.EstadoFinanciero(
+        id_expensa INT NOT NULL,
+        ing_en_termino DECIMAL(7,2) NOT NULL,
+        ing_exp_adeudadas DECIMAL(7,2),
+        ing_adelantado DECIMAL(7,2) NOT NULL,
+        egresos DECIMAL(7,2) NOT NULL,
+        saldo_cierre DECIMAL(7,2) NOT NULL,
+
+        CONSTRAINT PK_EstadoFinanciero PRIMARY KEY (id_expensa),
+        CONSTRAINT FK_Expensa_EstadoFinanciero FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa)
 );END
