@@ -61,19 +61,19 @@ BEGIN
 IF OBJECT_ID('adm.TipoServicioLimpieza') IS NULL
 BEGIN
     CREATE TABLE adm.TipoServicioLimpieza(
-        id_tipo_servLimpieza INT IDENTITY(1,1) NOT NULL,
+        id_tipo_serv_limpieza INT IDENTITY(1,1) NOT NULL,
         nombre VARCHAR(45) NOT NULL,
 
-        CONSTRAINT PK_TipoServicioLimpieza PRIMARY KEY (id_tipo_servLimpieza)
+        CONSTRAINT PK_TipoServicioLimpieza PRIMARY KEY (id_tipo_serv_limpieza)
 );END
 
 IF OBJECT_ID('adm.TipoServicioPublico') IS NULL
 BEGIN
     CREATE TABLE adm.TipoServicioPublico( 
-        id_tipo_servPublico INT IDENTITY(1,1) NOT NULL,
+        id_tipo_serv_publico INT IDENTITY(1,1) NOT NULL,
         nombre VARCHAR(45) NOT NULL,
 
-        CONSTRAINT PK_TipoServicioPublico PRIMARY KEY (id_tipo_servPublico)
+        CONSTRAINT PK_TipoServicioPublico PRIMARY KEY (id_tipo_serv_publico)
 );END
 
 IF OBJECT_ID('adm.Proveedor') IS NULL
@@ -92,7 +92,7 @@ IF OBJECT_ID('adm.Consorcio') IS NULL
 BEGIN
     CREATE TABLE adm.Consorcio(
         id_consorcio INT IDENTITY(1,1) NOT NULL,
-        id_tipo_servlimpieza INT NOT NULL,
+        id_tipo_serv_limpieza INT NOT NULL,
         nombre VARCHAR(25) NOT NULL,
         direccion VARCHAR(75) NOT NULL,
         metros_totales SMALLINT NOT NULL,
@@ -100,8 +100,7 @@ BEGIN
         precio_bauleraM2 DECIMAL(10,2) NOT NULL,
         
         CONSTRAINT PK_consorcio PRIMARY KEY (id_consorcio),
-        CONSTRAINT FK_serv_limp_consorcio FOREIGN KEY (id_tipo_servlimpieza) 
-        REFERENCES adm.TipoServicioLimpieza(id_tipo_servlimpieza)
+        CONSTRAINT FK_serv_limp_consorcio FOREIGN KEY (id_tipo_serv_limpieza) REFERENCES adm.TipoServicioLimpieza(id_tipo_serv_limpieza)
 ); END
 
 IF OBJECT_ID('adm.Expensa') IS NULL
@@ -226,12 +225,13 @@ BEGIN
         id_serv_pub INT IDENTITY(1,1) NOT NULL,
         id_expensa INT NOT NULL,
         id_factura INT NOT NULL,
-        id_tipo_serv_pub INT NOT NULL,
+        id_tipo_serv_publico INT NOT NULL,
         descripcion varchar(100),
 
         CONSTRAINT PK_GastoServicioPublico PRIMARY KEY (id_expensa, id_serv_pub),
         CONSTRAINT FK_Expensa_GastoServicioPublico FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
-        CONSTRAINT FK_Factura_GastoServicioPublico FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura)
+        CONSTRAINT FK_Factura_GastoServicioPublico FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura),
+        CONSTRAINT FK_TipoServPub_GastoServicioPublico FOREIGN KEY (id_tipo_serv_publico) REFERENCES adm.TipoServicioPublico(id_tipo_serv_publico)
 );END
 
 IF OBJECT_ID('gasto.General') IS NULL
@@ -262,7 +262,18 @@ BEGIN
         CONSTRAINT FK_Factura_GastoExtraordinario FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura)
 );END
 
+IF OBJECT_ID('gasto.Bancario') IS NULL
+BEGIN
+    CREATE TABLE gasto.Bancario(
+        id_bancario INT IDENTITY(1,1) NOT NULL,
+        id_expensa INT NOT NULL,
+        id_factura INT NOT NULL,
+        descripcion varchar(100),
 
+        CONSTRAINT PK_GastoBancario PRIMARY KEY (id_expensa, id_bancario),
+        CONSTRAINT FK_Expensa_GastoBancario FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
+        CONSTRAINT FK_Factura_GastoBancario FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura)
+);END
 
 IF OBJECT_ID('fin.ResumenBancarioCSV') IS NULL
 BEGIN
