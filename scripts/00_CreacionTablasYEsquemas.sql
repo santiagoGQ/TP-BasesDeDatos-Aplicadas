@@ -7,6 +7,7 @@
 --   SIMCIC, TOBIAS
 --------------------------------------------------
 
+
 -----------CREACION DE LA BASE DE DATOS-----------
 
 --Cambia a master
@@ -14,6 +15,8 @@ USE master
 GO
 
 --Eliminar la db
+--En caso de que haya conexiones y/o transacciones abiertas ejecutar
+--alter database COM2900_G04 set single_user with rollback immediate
 DROP DATABASE IF EXISTS COM2900_G04;
 GO 
 
