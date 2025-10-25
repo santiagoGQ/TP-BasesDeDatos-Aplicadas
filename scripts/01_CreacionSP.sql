@@ -37,10 +37,49 @@ CREATE OR ALTER PROCEDURE adm.AgregarProveedor
 AS
 BEGIN
 	DECLARE @email_formateado NVARCHAR(50)
-	SET @email_formateado = adm.fn_QuitarEspaciosEmail(@email)
+	SET @email_formateado = adm.QuitarEspaciosEmail(@email)
 
 	INSERT INTO adm.Proveedor(razon_social, cuit, email, telefono) 
 		values (@razon_social, @cuit, @email_formateado, @telefono)
 END
 GO
 
+
+CREATE OR ALTER PROCEDURE adm.AgregarPropietario
+	@nombre NVARCHAR(30),
+	@apellido NVARCHAR(30),
+	@dni INT,
+	@email NVARCHAR(50),
+	@telefono INT,
+	@cbu CHAR(22)
+AS
+BEGIN
+	DECLARE @nombre_formateado NVARCHAR(30) = adm.FormatearNombreOApellido(@nombre)
+	DECLARE @apellido_formateado NVARCHAR(30) = adm.FormatearNombreOApellido(@apellido)
+	DECLARE @email_formateado NVARCHAR(50) = adm.FormatearEmail(@email)
+
+	INSERT INTO adm.Propietario(nombre, apellido, dni, email, telefono, cbu)
+		VALUES(@nombre_formateado, @apellido_formateado, @dni, @email_formateado, @telefono, @cbu)
+	
+END
+GO
+
+CREATE OR ALTER PROCEDURE adm.AgregarInquilino
+	@nombre NVARCHAR(30),
+	@apellido NVARCHAR(30),
+	@dni INT,
+	@email NVARCHAR(50),
+	@telefono INT,
+	@cbu CHAR(22)
+AS
+BEGIN
+	DECLARE @nombre_formateado NVARCHAR(30) = adm.FormatearNombreOApellido(@nombre)
+	DECLARE @apellido_formateado NVARCHAR(30) = adm.FormatearNombreOApellido(@apellido)
+	DECLARE @email_formateado NVARCHAR(50) = adm.FormatearEmail(@email)
+
+	INSERT INTO adm.Inquilino(nombre, apellido, dni, email, telefono, cbu)
+		VALUES(@nombre_formateado, @apellido_formateado, @dni, @email_formateado, @telefono, @cbu)
+END
+GO
+
+-- TODO: Para hacer la modificacion de Inquilino o Propietario podriamos usar SQL dinamico quizas.
