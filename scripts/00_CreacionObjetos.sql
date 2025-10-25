@@ -186,19 +186,19 @@ BEGIN
         CONSTRAINT FK_Expensa_ResumenCSV FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa)
 );END
 
-IF OBJECT_ID('ref.EnviadoA') IS NULL
-BEGIN
-    CREATE TABLE ref.EnviadoA(
-        id_expensa INT IDENTITY(1,1) NOT NULL,
-        id_uni_func INT NOT NULL,
-        medio_Comunicacion_Prop VARCHAR(9) NOT NULL,
-        medio_Comunicacion_Inq VARCHAR(9) NOT NULL,
-    
-        CONSTRAINT PK_EnviadoA PRIMARY KEY (id_expensa),
-        CONSTRAINT FK_UF_EnviadoA FOREIGN KEY (id_uni_func) REFERENCES adm.UnidadFuncional(id_uni_func),
-        CONSTRAINT CHK_EnviadoA1 CHECK (medio_Comunicacion_Prop IN ('EMAIL','TELEFONO','IMPRESO')),
-        CONSTRAINT CHK_EnviadoA2 CHECK (medio_Comunicacion_Inq IN ('EMAIL','TELEFONO','IMPRESO'))
-);END
+--IF OBJECT_ID('ref.EnviadoA') IS NULL
+--BEGIN
+--    CREATE TABLE ref.EnviadoA(
+--        id_expensa INT IDENTITY(1,1) NOT NULL,
+--        id_uni_func INT NOT NULL,
+--        medio_Comunicacion_Prop VARCHAR(9) NOT NULL,
+--        medio_Comunicacion_Inq VARCHAR(9) NOT NULL,
+--    
+--        CONSTRAINT PK_EnviadoA PRIMARY KEY (id_expensa),
+--        CONSTRAINT FK_UF_EnviadoA FOREIGN KEY (id_uni_func) REFERENCES adm.UnidadFuncional(id_uni_func),
+--        CONSTRAINT CHK_EnviadoA1 CHECK (medio_Comunicacion_Prop IN ('EMAIL','TELEFONO','IMPRESO')),
+--        CONSTRAINT CHK_EnviadoA2 CHECK (medio_Comunicacion_Inq IN ('EMAIL','TELEFONO','IMPRESO'))
+--);END
 
 IF OBJECT_ID('adm.Propietario') IS NULL
 BEGIN
@@ -210,6 +210,8 @@ BEGIN
         email NVARCHAR(30) NOT NULL,
         telefono INT NOT NULL,
         cbu CHAR(22) NOT NULL,
+
+        CONSTRAINT PK_Propietario PRIMARY KEY (id_prop)
         
 ); END
 
@@ -222,6 +224,27 @@ BEGIN
         dni INT NOT NULL,
         email NVARCHAR(30) NOT NULL,
         telefono INT NOT NULL,
-        cbu CHAR(22) NOT NULL
+        cbu CHAR(22) NOT NULL,
+
+        CONSTRAINT PK_Inquilino PRIMARY KEY (id_inq)
         
+); END
+
+IF OBJECT_ID('adm.UnidadFuncional') IS NULL
+BEGIN
+    CREATE TABLE adm.UnidadFuncional(
+        id_uni_func INT IDENTITY(1,1),
+        id_inq INT NOT NULL,
+        id_prop INT NOT NULL,
+        id_consorcio INT NOT NULL,
+        total_m2 SMALLINT NOT NULL,
+        depto VARCHAR(4) NOT NULL,
+        cbu CHAR(22) NOT NULL,
+        baulera_m2 TINYINT NOT NULL,
+        cochera_m2 TINYINT NOT NULL
+
+        CONSTRAINT PK_UnidadFuncional PRIMARY KEY (id_uni_func),
+        CONSTRAINT FK_Inq_UnidadFuncional FOREIGN KEY (id_inq) REFERENCES adm.Inquilino(id_inq),
+        CONSTRAINT FK_Prop_UnidadFuncional FOREIGN KEY (id_prop) REFERENCES adm.Propietario(id_prop),
+        CONSTRAINT FK_Consorcio_UnidadFuncional FOREIGN KEY (id_consorcio) REFERENCES adm.Consorcio(id_consorcio),
 ); END
