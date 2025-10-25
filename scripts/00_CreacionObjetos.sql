@@ -272,3 +272,27 @@ BEGIN
         CONSTRAINT PK_EstadoFinanciero PRIMARY KEY (id_expensa),
         CONSTRAINT FK_Expensa_EstadoFinanciero FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa)
 );END
+
+IF OBJECT_ID('fin.EstadoDeCuenta') IS NULL
+BEGIN
+    CREATE TABLE fin.EstadoDeCuenta(
+        id_expensa INT NOT NULL,
+        id_est_de_cuenta INT IDENTITY(1,1) NOT NULL,
+        id_uni_func INT NOT NULL,
+        prorateo DECIMAL(2,2) NOT NULL,
+        depto VARCHAR(4) NOT NULL,
+        cochera DECIMAL(7,2),
+        baulera DECIMAL(7,2),
+        nom_y_ap_propietario VARCHAR(50) NOT NULL,
+        saldo_ant_abonado DECIMAL(7,2),
+        pago_recibido DECIMAL(7,2),
+        deuda DECIMAL(7,2),
+        interes_mora DECIMAL(7,2),
+        expensas_ordinarias DECIMAL(7,2) NOT NULL,
+        expensas_extraordinarias DECIMAL(7,2),
+        total_a_pagar DECIMAL(7,2) NOT NULL,
+
+        CONSTRAINT PK_EstadoDeCuenta PRIMARY KEY (id_expensa, id_est_de_cuenta),
+        CONSTRAINT FK_Expensa_EstadoDeCuenta FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
+        CONSTRAINT FK_UF_EstadoDeCuenta FOREIGN KEY (id_uni_func) REFERENCES adm.UnidadFuncional(id_uni_func)
+);END
