@@ -288,6 +288,7 @@ IF OBJECT_ID('fin.ResumenBancarioCSV') IS NULL
 BEGIN
     CREATE TABLE fin.ResumenBancarioCSV(
         id_expensa INT NOT NULL,
+        fechaCreado DATE
 
         CONSTRAINT PK_ResumenCSV PRIMARY KEY (id_expensa),
         CONSTRAINT FK_Expensa_ResumenCSV FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa)

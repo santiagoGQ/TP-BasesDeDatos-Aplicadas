@@ -37,7 +37,7 @@ CREATE OR ALTER PROCEDURE adm.AgregarProveedor
 AS
 BEGIN
 	DECLARE @email_formateado NVARCHAR(50)
-	SET @email_formateado = adm.QuitarEspaciosEmail(@email)
+	SET @email_formateado = adm.FormatearEmail(@email)
 
 	INSERT INTO adm.Proveedor(razon_social, cuit, email, telefono) 
 		values (@razon_social, @cuit, @email_formateado, @telefono)
