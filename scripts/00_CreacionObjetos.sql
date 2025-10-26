@@ -287,13 +287,14 @@ BEGIN
 IF OBJECT_ID('adm.EnviadoA') IS NULL
 BEGIN
     CREATE TABLE adm.EnviadoA(
-        id_expensa INT IDENTITY(1,1) NOT NULL,
+        id_expensa INT NOT NULL,
         id_uni_func INT NOT NULL,
         medio_Comunicacion_Prop VARCHAR(9) NOT NULL,
         medio_Comunicacion_Inq VARCHAR(9) NOT NULL,
     
-        CONSTRAINT PK_EnviadoA PRIMARY KEY (id_expensa),
+        CONSTRAINT PK_EnviadoA PRIMARY KEY (id_expensa, id_uni_func),
         CONSTRAINT FK_UF_EnviadoA FOREIGN KEY (id_uni_func) REFERENCES adm.UnidadFuncional(id_uni_func),
+        CONSTRAINT FK_Expensa_EnviadoA FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
         CONSTRAINT CHK_EnviadoA1 CHECK (medio_Comunicacion_Prop IN ('EMAIL','TELEFONO','IMPRESO')),
         CONSTRAINT CHK_EnviadoA2 CHECK (medio_Comunicacion_Inq IN ('EMAIL','TELEFONO','IMPRESO'))
 );END
