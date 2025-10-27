@@ -48,4 +48,43 @@ BEGIN
 	END CATCH
 END
 GO
-	
+
+CREATE OR ALTER PROCEDURE adm.BorrarPropietario
+	@id_prop INT
+AS
+BEGIN
+	BEGIN TRY
+		IF NOT EXISTS(SELECT 1 FROM adm.Propietario WHERE id_prop=@id_prop)
+		BEGIN
+			RAISERROR('No existe propietario con esa id.',16,1)
+			RETURN
+		END
+
+		DELETE FROM adm.Propietario WHERE id_prop=@id_prop
+	END TRY
+
+	BEGIN CATCH
+        PRINT('Error al eliminar propietario: ' + ERROR_MESSAGE())
+	END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE adm.BorrarInquilino
+	@id_inq INT
+AS
+BEGIN
+	BEGIN TRY
+		IF NOT EXISTS(SELECT 1 FROM adm.Inquilino WHERE id_inq=@id_inq)
+		BEGIN
+			RAISERROR('No existe inquilino con esa id.',16,1)
+			RETURN
+		END
+
+		DELETE FROM adm.Inquilino WHERE id_inq=@id_inq
+	END TRY
+
+	BEGIN CATCH
+        PRINT('Error al eliminar inquilino: ' + ERROR_MESSAGE());
+	END CATCH
+END
+GO

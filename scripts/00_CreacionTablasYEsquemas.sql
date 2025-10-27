@@ -100,8 +100,6 @@ BEGIN
         CONSTRAINT CK_consorcio_M2 CHECK (metros_totales > 0),
         CONSTRAINT CK_consorcio_precioBaulera CHECK (precio_bauleraM2 >=0),
         CONSTRAINT CK_consorcio_precioCochera CHECK (precio_cocheraM2 >=0)
-        --CONSTRAINT CK_Consorcio_MetrosPorPiso CHECK (metros_totales >= cantidad_uf * 25)
-        --CONSTRAINT CK_consorcio2 CHECK (cantidad_uf > 0) no sé si poner o no este
 
 ); END
 
@@ -166,8 +164,8 @@ BEGIN
         cochera_m2 TINYINT NOT NULL
 
         CONSTRAINT PK_UnidadFuncional PRIMARY KEY (id_uni_func),
-        CONSTRAINT FK_Inq_UnidadFuncional FOREIGN KEY (id_inq) REFERENCES adm.Inquilino(id_inq),
-        CONSTRAINT FK_Prop_UnidadFuncional FOREIGN KEY (id_prop) REFERENCES adm.Propietario(id_prop),
+        CONSTRAINT FK_Inq_UnidadFuncional FOREIGN KEY (id_inq) REFERENCES adm.Inquilino(id_inq) ON DELETE SET NULL,
+        CONSTRAINT FK_Prop_UnidadFuncional FOREIGN KEY (id_prop) REFERENCES adm.Propietario(id_prop) ON DELETE SET NULL,
         CONSTRAINT FK_Consorcio_UnidadFuncional FOREIGN KEY (id_consorcio) REFERENCES adm.Consorcio(id_consorcio),
         CONSTRAINT CK_UF_MayorCero CHECK (baulera_m2 >=0 AND cochera_m2 >=0),
         CONSTRAINT CK_UF_Superficie CHECK (baulera_m2+cochera_m2 <= total_m2),
@@ -325,8 +323,6 @@ BEGIN
         CONSTRAINT PK_Pago PRIMARY KEY (id_resumen, id_pago),
         CONSTRAINT FK_Resumen_Pago FOREIGN KEY (id_resumen) REFERENCES fin.ResumenBancarioCSV(id_expensa),
         CONSTRAINT FK_UniFunc_Pago FOREIGN KEY (id_uni_func) REFERENCES adm.UnidadFuncional(id_uni_func),
-        --CONSTRAINT UQ_Pago_ufFecha UNIQUE (id_uni_func,fecha)
-        --pense esto para evitar pagos duplicados, pero si alguien hace el pago en varias transf(?) no podria con esto
 );END
 
 
