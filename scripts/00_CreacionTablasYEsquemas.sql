@@ -99,7 +99,6 @@ BEGIN
         CONSTRAINT CK_consorcio_M2 CHECK (metros_totales > 0),
         CONSTRAINT CK_consorcio_precioBaulera CHECK (precio_bauleraM2 >=0),
         CONSTRAINT CK_Consorcio_MetrosPorPiso CHECK (metros_totales >= cantidad_uf * 25)
-        --CONSTRAINT CK_consorcio2 CHECK (cantidad_uf > 0) no sé si poner o no este
 
 ); END
 
