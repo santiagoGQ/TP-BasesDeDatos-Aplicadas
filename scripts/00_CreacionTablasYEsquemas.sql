@@ -92,13 +92,15 @@ BEGIN
         direccion VARCHAR(75),
         metros_totales SMALLINT NOT NULL,
         cantidad_uf TINYINT NOT NULL,
-        precio_bauleraM2 DECIMAL(10,2) NOT NULL,
+        precio_bauleraM2 DECIMAL(10,2) default 0,
+        precio_cocheraM2 DECIMAL(10,2) default 0,
         
         CONSTRAINT PK_consorcio PRIMARY KEY (id_consorcio),
         CONSTRAINT FK_serv_limp_consorcio FOREIGN KEY (id_tipo_serv_limpieza) REFERENCES adm.TipoServicioLimpieza(id_tipo_serv_limpieza),
         CONSTRAINT CK_consorcio_M2 CHECK (metros_totales > 0),
         CONSTRAINT CK_consorcio_precioBaulera CHECK (precio_bauleraM2 >=0),
-        CONSTRAINT CK_Consorcio_MetrosPorPiso CHECK (metros_totales >= cantidad_uf * 25)
+        CONSTRAINT CK_consorcio_precioCochera CHECK (precio_cocheraM2 >=0)
+        --CONSTRAINT CK_Consorcio_MetrosPorPiso CHECK (metros_totales >= cantidad_uf * 25)
         --CONSTRAINT CK_consorcio2 CHECK (cantidad_uf > 0) no sé si poner o no este
 
 ); END
@@ -156,8 +158,10 @@ BEGIN
         id_prop INT,
         id_consorcio INT NOT NULL,
         total_m2 SMALLINT NOT NULL,
+        piso VARCHAR(4) NOT NULL,
         depto VARCHAR(4) NOT NULL,
-        cbu CHAR(22) NOT NULL,
+        coeficiente DECIMAL(3,2) NOT NULL,
+        cbu CHAR(22),
         baulera_m2 TINYINT NOT NULL,
         cochera_m2 TINYINT NOT NULL
 
@@ -168,7 +172,7 @@ BEGIN
         CONSTRAINT CK_UF_MayorCero CHECK (baulera_m2 >=0 AND cochera_m2 >=0),
         CONSTRAINT CK_UF_Superficie CHECK (baulera_m2+cochera_m2 <= total_m2),
         CONSTRAINT CK_UF_cbu CHECK (LEN(cbu)=22 AND cbu NOT LIKE '%[^0-9]%'),
-        CONSTRAINT UQ_UF_ConsorcioDepto UNIQUE (id_consorcio, depto),
+        CONSTRAINT UQ_UF_ConsorcioDepto UNIQUE (id_consorcio, piso, depto),
 
 ); END
 
@@ -180,7 +184,6 @@ BEGIN
         id_proveedor INT NOT NULL,
         nro_Factura VARCHAR(15) NOT NULL,
         fecha_Emision DATE NOT NULL,
-        fecha_Vencimiento DATE NOT NULL,
         importe DECIMAL(10,2) NOT NULL,
 
         CONSTRAINT PK_Factura PRIMARY KEY (id_factura),

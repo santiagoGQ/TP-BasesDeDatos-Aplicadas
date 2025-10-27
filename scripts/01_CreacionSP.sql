@@ -13,6 +13,8 @@
 USE COM2900_G04
 GO
 
+-------------- ADM --------------
+
 CREATE OR ALTER PROCEDURE adm.AgregarTipoServicioLimpieza 
 	@nombre VARCHAR(45)
 AS
@@ -238,3 +240,119 @@ BEGIN
 	END CATCH
 END
 GO
+
+-------------- GASTO --------------
+-- TODO: Creo que se puede hacer con SQL Dinamico toda esta parte. El SP es el mismo, solo cambia 
+--		 el nombre de la tabla. Salvo el gasto de limpieza y el extraordinario
+
+CREATE OR ALTER PROCEDURE gasto.AgregarGastoAdministracion
+	@id_expensa INT,
+	@id_factura INT,
+	@descripcion VARCHAR(100)
+AS
+BEGIN
+	INSERT INTO gasto.Administracion(id_expensa, id_factura, descripcion)
+		VALUES (@id_expensa, @id_factura, @descripcion)
+END
+GO
+
+CREATE OR ALTER PROCEDURE gasto.AgregarGastoBancario
+	@id_expensa INT,
+	@id_factura INT,
+	@descripcion VARCHAR(100)
+AS
+BEGIN
+	INSERT INTO gasto.Bancario(id_expensa, id_factura, descripcion)
+		VALUES (@id_expensa, @id_factura, @descripcion)
+END
+GO
+
+CREATE OR ALTER PROCEDURE gasto.AgregarGastoExtraordinario
+	@id_expensa INT,
+	@id_factura INT,
+	@descripcion VARCHAR(100),
+	@nro_cuota TINYINT,
+	@total_cuotas TINYINT
+AS
+BEGIN
+	INSERT INTO gasto.Extraordinario(id_expensa, id_factura, descripcion, nro_cuota, total_cuotas)
+		VALUES (@id_expensa, @id_factura, @descripcion, @nro_cuota, @total_cuotas)
+END
+GO
+
+CREATE OR ALTER PROCEDURE gasto.AgregarGastoGeneral
+	@id_expensa INT,
+	@id_factura INT,
+	@descripcion VARCHAR(100)
+AS
+BEGIN
+	INSERT INTO gasto.General(id_expensa, id_factura, descripcion)
+		VALUES (@id_expensa, @id_factura, @descripcion)
+END
+GO
+
+CREATE OR ALTER PROCEDURE gasto.AgregarGastoLimpieza
+	@id_expensa INT,
+	@id_factura INT,
+	@descripcion VARCHAR(100)
+AS
+BEGIN
+	INSERT INTO gasto.Limpieza(id_expensa, id_factura, descripcion)
+		VALUES (@id_expensa, @id_factura, @descripcion)
+END
+GO
+
+CREATE OR ALTER PROCEDURE gasto.AgregarGastoSeguro
+	@id_expensa INT,
+	@id_factura INT,
+	@descripcion VARCHAR(100)
+AS
+BEGIN
+	INSERT INTO gasto.Seguro(id_expensa, id_factura, descripcion)
+		VALUES (@id_expensa, @id_factura, @descripcion)
+END
+GO
+
+CREATE OR ALTER PROCEDURE gasto.AgregarGastoServicioPublico
+	@id_expensa INT,
+	@id_factura INT,
+	@id_tipo_serv_publico INT,
+	@descripcion VARCHAR(100)
+AS
+BEGIN
+	INSERT INTO gasto.ServicioPublico(id_expensa, id_factura, descripcion)
+		VALUES (@id_expensa, @id_factura, @descripcion)
+END
+GO
+
+-------------- FIN --------------
+
+CREATE OR ALTER PROCEDURE fin.AgregarFactura
+	@id_proveedor INT,
+	@nro_factura VARCHAR(15),
+	@fecha_emision DATE,
+	@importe DECIMAL(10,2)
+AS
+BEGIN
+	INSERT INTO fin.Factura(id_proveedor, nro_Factura, fecha_Emision, importe) 
+		values(@id_proveedor, @nro_factura, @fecha_emision, @importe)
+END
+GO
+
+CREATE OR ALTER PROCEDURE fin.AgregarPago
+	@id_resumen INT,
+	@id_uni_func INT,
+	@fecha DATETIME,
+	@cuenta_origen CHAR(22),
+	@monto DECIMAL(7,2)
+AS
+BEGIN
+	INSERT INTO fin.Pago(id_resumen, id_uni_func, fecha, cuenta_origen, monto)
+		VALUES (@id_resumen, @id_uni_func, @fecha, @cuenta_origen, @monto)
+END
+GO
+
+-- Generar Estado Financiero
+-- Leer Resumen Bancario
+-- Generar Estado de Cuenta
+
