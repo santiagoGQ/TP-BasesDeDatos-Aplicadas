@@ -87,7 +87,7 @@ IF OBJECT_ID('adm.Consorcio') IS NULL
 BEGIN
     CREATE TABLE adm.Consorcio(
         id_consorcio INT IDENTITY(1,1) NOT NULL,
-        id_tipo_serv_limpieza INT NOT NULL,
+        id_tipo_serv_limpieza INT,
         nombre VARCHAR(25) NOT NULL,
         direccion VARCHAR(75),
         metros_totales SMALLINT NOT NULL,
@@ -179,7 +179,7 @@ IF OBJECT_ID('fin.Factura') IS NULL
 BEGIN
     CREATE TABLE fin.Factura(
         id_factura INT IDENTITY(1,1) NOT NULL,
-        id_proveedor INT NOT NULL,
+        id_proveedor INT,
         nro_Factura VARCHAR(15) NOT NULL,
         fecha_Emision DATE NOT NULL,
         importe DECIMAL(10,2) NOT NULL,
@@ -234,7 +234,7 @@ BEGIN
         id_serv_pub INT IDENTITY(1,1) NOT NULL,
         id_expensa INT NOT NULL,
         id_factura INT NOT NULL,
-        id_tipo_serv_publico INT NOT NULL,
+        id_tipo_serv_publico INT,
         descripcion varchar(100),
 
         CONSTRAINT PK_GastoServicioPublico PRIMARY KEY (id_expensa, id_serv_pub),
