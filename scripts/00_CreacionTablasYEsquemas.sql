@@ -99,7 +99,7 @@ BEGIN
         precio_cocheraM2 DECIMAL(10,2) default 0,
         
         CONSTRAINT PK_consorcio PRIMARY KEY (id_consorcio),
-        CONSTRAINT FK_serv_limp_consorcio FOREIGN KEY (id_tipo_serv_limpieza) REFERENCES adm.TipoServicioLimpieza(id_tipo_serv_limpieza),
+        CONSTRAINT FK_serv_limp_consorcio FOREIGN KEY (id_tipo_serv_limpieza) REFERENCES adm.TipoServicioLimpieza(id_tipo_serv_limpieza) ON DELETE SET NULL,
         CONSTRAINT CK_consorcio_M2 CHECK (metros_totales > 0),
         CONSTRAINT CK_consorcio_precioBaulera CHECK (precio_bauleraM2 >=0),
         CONSTRAINT CK_consorcio_precioCochera CHECK (precio_cocheraM2 >=0)
@@ -164,7 +164,8 @@ BEGIN
         coeficiente DECIMAL(3,2) NOT NULL,
         cbu CHAR(22),
         baulera_m2 TINYINT NOT NULL,
-        cochera_m2 TINYINT NOT NULL
+        cochera_m2 TINYINT NOT NULL,
+        activo TINYINT NOT NULL
 
         CONSTRAINT PK_UnidadFuncional PRIMARY KEY (id_uni_func),
         CONSTRAINT FK_Inq_UnidadFuncional FOREIGN KEY (id_inq) REFERENCES adm.Inquilino(id_inq) ON DELETE SET NULL,
@@ -174,6 +175,8 @@ BEGIN
         CONSTRAINT CK_UF_Superficie CHECK (baulera_m2+cochera_m2 <= total_m2),
         CONSTRAINT CK_UF_cbu CHECK (LEN(cbu)=22 AND cbu NOT LIKE '%[^0-9]%'),
         CONSTRAINT UQ_UF_ConsorcioDepto UNIQUE (id_consorcio, piso, depto),
+        CONSTRAINT DF_UF_activo DEFAULT 1 FOR activo,
+        CONSTRAINT CK_UF_activo CHECK (activo=0 OR activo=1)
 
 ); END
 
@@ -182,13 +185,13 @@ IF OBJECT_ID('fin.Factura') IS NULL
 BEGIN
     CREATE TABLE fin.Factura(
         id_factura INT IDENTITY(1,1) NOT NULL,
-        id_proveedor INT NOT NULL,
+        id_proveedor INT,
         nro_Factura VARCHAR(15) NOT NULL,
-        fecha_Emision DATE NOT NULL,
+        fecha_Emision DATETIME NOT NULL,
         importe DECIMAL(10,2) NOT NULL,
 
         CONSTRAINT PK_Factura PRIMARY KEY (id_factura),
-        CONSTRAINT FK_Proveedor_Factura FOREIGN KEY (id_proveedor) REFERENCES adm.Proveedor(id_proveedor),
+        CONSTRAINT FK_Proveedor_Factura FOREIGN KEY (id_proveedor) REFERENCES adm.Proveedor(id_proveedor) ON DELETE SET NULL,
         CONSTRAINT CK_Factura_Importe CHECK (importe>=0),
         CONSTRAINT UQ_Factura_nro UNIQUE (nro_factura)
 );END
@@ -237,13 +240,13 @@ BEGIN
         id_serv_pub INT IDENTITY(1,1) NOT NULL,
         id_expensa INT NOT NULL,
         id_factura INT NOT NULL,
-        id_tipo_serv_publico INT NOT NULL,
+        id_tipo_serv_publico INT,
         descripcion varchar(100),
 
         CONSTRAINT PK_GastoServicioPublico PRIMARY KEY (id_expensa, id_serv_pub),
         CONSTRAINT FK_Expensa_GastoServicioPublico FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
         CONSTRAINT FK_Factura_GastoServicioPublico FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura),
-        CONSTRAINT FK_TipoServPub_GastoServicioPublico FOREIGN KEY (id_tipo_serv_publico) REFERENCES adm.TipoServicioPublico(id_tipo_serv_publico)
+        CONSTRAINT FK_TipoServPub_GastoServicioPublico FOREIGN KEY (id_tipo_serv_publico) REFERENCES adm.TipoServicioPublico(id_tipo_serv_publico) ON DELETE SET NULL
 );END
 
 IF OBJECT_ID('gasto.General') IS NULL
@@ -292,7 +295,7 @@ IF OBJECT_ID('fin.ResumenBancarioCSV') IS NULL
 BEGIN
     CREATE TABLE fin.ResumenBancarioCSV(
         id_expensa INT NOT NULL,
-        fechaCreado DATE
+        fechaCreado DATETIME
 
         CONSTRAINT PK_ResumenCSV PRIMARY KEY (id_expensa),
         CONSTRAINT FK_Expensa_ResumenCSV FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa)

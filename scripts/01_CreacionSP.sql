@@ -236,7 +236,7 @@ BEGIN
 			VALUES (@expensa,@unidad_funcional,@medio_inq,@medio_prop)
 	END TRY
 	BEGIN CATCH
-		PRINT('Error al agregar la unidad funcional: ' + ERROR_MESSAGE())
+		PRINT('Error al agregar: ' + ERROR_MESSAGE())
 	END CATCH
 END
 GO
@@ -356,3 +356,204 @@ GO
 -- Leer Resumen Bancario
 -- Generar Estado de Cuenta
 
+CREATE OR ALTER PROCEDURE adm.AgregarExpensa
+	@id_consorcio INT, @fechaGenerado DATE, 
+	@fechaPrimerVenc DATE, @fechaSegVenc DATE
+AS
+BEGIN
+	BEGIN TRY
+		IF NOT EXISTS(SELECT TOP 1 FROM adm.Expensa WHERE id_consorcio=@id_consorcio)
+		BEGIN
+			RAISERROR('No existe consorcio con ese id.',16,1)
+			RETURN
+		END
+
+		IF NOT EXISTS(SELECT TOP 1 FROM adm.Expensa WHERE id_consorcio=@id_consorcio AND fechaGenerado=@fechaGenerado)
+		BEGIN
+			RAISERROR('Ya existe una expensa generada para ese consorcio en esa fecha.',16,1)
+			RETURN
+		END
+		--VALIDACION DE FECHAS
+		IF @fechaGenerado>=@fechaPrimerVenc
+		BEGIN
+			RAISERROR('La fecha de generación no puede ser posterior al primer vencimiento.',16,1)
+			RETURN
+		END
+		
+		IF @fechaPrimerVenc>=@fechaSegundoVenc
+		BEGIN
+			RAISERROR('La fecha de segundo vencimiento no puede ser posterior al primer vencimiento.',16,1)
+			RETURN
+		END
+
+		IF @fechaGenerado>GETDATE()
+		BEGIN
+			RAISERROR('La fecha de generación no puede ser posterior a la actual.',16,1)
+			RETURN
+		END
+
+		INSERT INTO adm.Expensa(id_consorcio,fechaGenerado,fechaPrimerVenc,fechaSegVenc)
+			VALUES (@id_consorcio,@fechaGenerado,@fechaPrimerVenc,@fechaSegVenc)
+	END TRY
+	BEGIN CATCH
+		PRINT('Error al agregar la expensa: ' + ERROR_MESSAGE())
+	END CATCH
+END
+GO
+--------------------------ESQUEMA FINANZAS--------------------------
+CREATE OR ALTER PROCEDURE fin.AgregarFactura
+    @id_proveedor INT,
+    @nro_factura VARCHAR(15),
+    @fecha_emision DATE,
+    @fecha_venc DATE,
+    @importe DECIMAL(10,2)
+AS
+BEGIN
+	BEGIN TRY
+		IF NOT EXISTS(SELECT 1 FROM adm.Proveedor WHERE id_proveedor=@id_proveedor)
+		BEGIN
+			RAISERROR('No existe proveedor con ese id.',16,1)
+			RETURN
+		END
+
+		IF EXISTS(SELECT 1 FROM fin.Factura WHERE nro_factura=@nro_factura)
+		BEGIN
+			RAISERROR('Ya existe una factura con ese numero.',16,1)
+			RETURN
+		END
+
+        IF @fecha_emision > @fecha_venc
+        BEGIN
+            RAISERROR('La fecha de emisión no puede ser posterior al vencimiento.', 16, 1)
+            RETURN
+        END
+
+        IF @fecha_emision > GETDATE()
+        BEGIN
+            RAISERROR('La fecha de emisión no puede ser posterior a la actual.', 16, 1)
+            RETURN
+        END
+
+		INSERT INTO fin.Factura (id_proveedor, nro_factura, fecha_emision, fecha_vencimiento, importe)
+			VALUES (@id_proveedor, @nro_factura, @fecha_emision, @fecha_venc, @importe)
+	END TRY
+	BEGIN CATCH
+		PRINT('Error al agregar la factura: ' + ERROR_MESSAGE())
+	END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE fin.AgregarPago
+    @id_resumen INT,@id_uni_func INT=NULL,
+	@fecha DATETIME,@cuenta_origen CHAR(22),@monto DECIMAL(7,2)
+AS
+BEGIN
+    BEGIN TRY
+        IF NOT EXISTS (SELECT 1 FROM fin.ResumenBancarioCSV WHERE id_expensa=@id_resumen)
+        BEGIN
+            RAISERROR('No existe resumen bancario con ese id.', 16, 1)
+            RETURN
+        END
+
+        IF @id_uni_func IS NOT NULL AND NOT EXISTS (SELECT 1 FROM adm.UnidadFuncional WHERE id_uni_func=@id_uni_func)
+        BEGIN
+            RAISERROR('No existe unidad funcional con ese id.', 16, 1)
+            RETURN
+        END
+
+        IF @fecha > GETDATE()
+        BEGIN
+            RAISERROR('La fecha del pago no puede ser posterior a la actual.', 16, 1)
+            RETURN
+        END
+
+        INSERT INTO fin.Pago (id_resumen, id_uni_func, fecha, cuenta_origen, monto)
+        VALUES (@id_resumen, @id_uni_func, @fecha, @cuenta_origen, @monto)
+
+    END TRY
+    BEGIN CATCH
+        PRINT('Error al registrar el pago: ' + ERROR_MESSAGE())
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE fin.AgregarEstadoFinanciero
+    @id_expensa INT,
+    @ing_en_termino DECIMAL(7,2),
+    @ing_exp_adeudadas DECIMAL(7,2),
+    @ing_adelantado DECIMAL(7,2),
+    @egresos DECIMAL(7,2),
+    @saldo_cierre DECIMAL(7,2)
+AS
+BEGIN
+    BEGIN TRY
+        IF NOT EXISTS (SELECT 1 FROM adm.Expensa WHERE id_expensa=@id_expensa)
+        BEGIN
+            RAISERROR('No existe expensa con ese id.', 16, 1)
+            RETURN
+        END
+
+        IF EXISTS (SELECT 1 FROM fin.EstadoFinanciero WHERE id_expensa=@id_expensa)
+        BEGIN
+            RAISERROR('Ya existe un estado financiero para la expesna.', 16, 1)
+            RETURN
+        END
+
+        IF @saldo_cierre < 0
+        BEGIN
+            RAISERROR('El saldo de cierre no puede ser negativo.', 16, 1)
+            RETURN
+        END
+
+        INSERT INTO fin.EstadoFinanciero (id_expensa, ing_en_termino, ing_exp_adeudadas, ing_adelantado, egresos, saldo_cierre)
+        VALUES (@id_expensa, @ing_en_termino, @ing_exp_adeudadas, @ing_adelantado, @egresos, @saldo_cierre)
+
+    END TRY
+    BEGIN CATCH
+        PRINT('Error al agregar estado financiero: ' + ERROR_MESSAGE())
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE fin.AgregarEstadoDeCuenta
+    @id_expensa INT,@id_uni_func INT,@prorateo DECIMAL(4,2),@depto VARCHAR(4),
+    @cochera DECIMAL(7,2),@baulera DECIMAL(7,2),@nom_y_ap_propietario VARCHAR(50),
+    @saldo_ant_abonado DECIMAL(7,2),@pago_recibido DECIMAL(7,2),@deuda DECIMAL(7,2),
+    @interes_mora DECIMAL(7,2),@expensas_ordinarias DECIMAL(7,2),
+	@expensas_extraordinarias DECIMAL(7,2),@total_a_pagar DECIMAL(7,2)
+AS
+BEGIN
+    BEGIN TRY
+        IF NOT EXISTS (SELECT 1 FROM adm.Expensa WHERE id_expensa = @id_expensa)
+        BEGIN
+            RAISERROR('No existe expensa con ese id.', 16, 1)
+            RETURN
+        END
+
+        IF NOT EXISTS (SELECT 1 FROM adm.UnidadFuncional WHERE id_uni_func = @id_uni_func)
+        BEGIN
+            RAISERROR('No existe unidad funcional con ese id.', 16, 1)
+            RETURN
+        END
+
+        IF @total_a_pagar < 0
+        BEGIN
+            RAISERROR('El total a pagar no puede ser negativo.', 16, 1)
+            RETURN
+        END
+
+        INSERT INTO fin.EstadoDeCuenta (
+            id_expensa, id_uni_func, prorateo, depto, cochera, baulera,
+            nom_y_ap_propietario, saldo_ant_abonado, pago_recibido, deuda,
+            interes_mora, expensas_ordinarias, expensas_extraordinarias, total_a_pagar)
+        VALUES (
+            @id_expensa, @id_uni_func, @prorateo, @depto, @cochera, @baulera,
+            @nom_y_ap_propietario, @saldo_ant_abonado, @pago_recibido, @deuda,
+            @interes_mora, @expensas_ordinarias, @expensas_extraordinarias, @total_a_pagar)
+
+    END TRY
+    BEGIN CATCH
+        PRINT('Error al agregar el estado de cuenta: ' + ERROR_MESSAGE())
+    END CATCH
+END
+GO
