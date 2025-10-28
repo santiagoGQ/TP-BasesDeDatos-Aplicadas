@@ -71,8 +71,8 @@ BEGIN
 	END TRY
 
 	BEGIN CATCH
-		DECLARE @ErrMsg NVARCHAR(4000) = ERROR_MESSAGE()
-		RAISERROR('Error al eliminar tipo de servicio: %s', 16, 1 ,@ErrMsg)
+		DECLARE @errmsg NVARCHAR(4000) = ERROR_MESSAGE()
+		RAISERROR('Error al eliminar tipo de servicio: %s', 16, 1 ,@errmsg)
 	END CATCH
 END
 GO
@@ -95,8 +95,8 @@ BEGIN
 	END TRY
 
 	BEGIN CATCH
-		DECLARE @ErrMsg NVARCHAR(4000) = ERROR_MESSAGE()
-		RAISERROR('Error al eliminar tipo de servicio: %s', 16, 1 ,@ErrMsg)
+		DECLARE @errmsg NVARCHAR(4000) = ERROR_MESSAGE()
+		RAISERROR('Error al eliminar tipo de servicio: %s', 16, 1 ,@errmsg)
 	END CATCH
 END
 GO
@@ -107,5 +107,54 @@ AS
 BEGIN
 	--TODO: Borrado lógico o en cascada
 
+END
+GO
+
+CREATE OR ALTER PROCEDURE adm.BorrarProveedor
+	@id_proveedor INT
+AS
+BEGIN
+	SET NOCOUNT ON
+	BEGIN TRY
+		IF NOT EXISTS(SELECT 1 FROM adm.Proveedor WHERE id_proveedor = @id_proveedor)
+		BEGIN
+			RAISERROR('No existe proveedor con esa id',16,1)
+			RETURN
+		END
+				                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+		DELETE FROM adm.Proveedor WHERE id_proveedor = @id_proveedor
+
+		RAISERROR('Proveedor eliminado correctamente',10,1)
+	END TRY
+
+	BEGIN CATCH
+		DECLARE @errmsg NVARCHAR(4000) = ERROR_MESSAGE()
+		RAISERROR('Error al eliminar proveedor: %s', 16, 1 ,@errmsg)
+	END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE adm.BorrarEnviadoA
+	@id_expensa INT,
+	@id_uni_func INT
+AS
+BEGIN
+	SET NOCOUNT ON
+	BEGIN TRY
+		IF NOT EXISTS(SELECT 1 FROM adm.EnviadoA WHERE id_expensa = @id_expensa AND id_uni_func = @id_uni_func)
+		BEGIN
+			RAISERROR('No existe registro con esas id',16,1)
+			RETURN
+		END
+				                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+		DELETE FROM adm.EnviadoA WHERE id_expensa = @id_expensa AND id_uni_func = @id_uni_func
+
+		RAISERROR('Registro eliminado correctamente',10,1)
+	END TRY
+
+	BEGIN CATCH
+		DECLARE @errmsg NVARCHAR(4000) = ERROR_MESSAGE()
+		RAISERROR('Error al eliminar registro: %s', 16, 1 ,@errmsg)
+	END CATCH
 END
 GO

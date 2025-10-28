@@ -185,7 +185,7 @@ BEGIN
         importe DECIMAL(10,2) NOT NULL,
 
         CONSTRAINT PK_Factura PRIMARY KEY (id_factura),
-        CONSTRAINT FK_Proveedor_Factura FOREIGN KEY (id_proveedor) REFERENCES adm.Proveedor(id_proveedor),
+        CONSTRAINT FK_Proveedor_Factura FOREIGN KEY (id_proveedor) REFERENCES adm.Proveedor(id_proveedor) ON DELETE SET NULL,
         CONSTRAINT CK_Factura_Importe CHECK (importe>=0),
         CONSTRAINT UQ_Factura_nro UNIQUE (nro_factura)
 );END
