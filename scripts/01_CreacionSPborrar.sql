@@ -158,3 +158,23 @@ BEGIN
 	END CATCH
 END
 GO
+
+CREATE OR ALTER PROCEDURE adm.BorrarUnidadFuncional
+	@id_uni_func INT
+AS
+BEGIN
+	SET NOCOUNT ON
+	BEGIN TRY
+		IF NOT EXISTS(SELECT 1 FROM adm.UnidadFuncional WHERE id_uni_func=@id_uni_func)
+		BEGIN
+			RAISERROR('No existe registro con ese id.',16,1)
+			RETURN
+		END
+
+		UPDATE adm.UnidadFuncional SET activo=0 WHERE id_uni_func=@id_uni_func
+	END TRY
+	BEGIN CATCH
+        PRINT('Error al eliminar unidad funcional: ' + ERROR_MESSAGE())
+	END CATCH
+END
+GO

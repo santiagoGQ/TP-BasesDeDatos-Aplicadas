@@ -161,7 +161,8 @@ BEGIN
         coeficiente DECIMAL(3,2) NOT NULL,
         cbu CHAR(22),
         baulera_m2 TINYINT NOT NULL,
-        cochera_m2 TINYINT NOT NULL
+        cochera_m2 TINYINT NOT NULL,
+        activo TINYINT NOT NULL
 
         CONSTRAINT PK_UnidadFuncional PRIMARY KEY (id_uni_func),
         CONSTRAINT FK_Inq_UnidadFuncional FOREIGN KEY (id_inq) REFERENCES adm.Inquilino(id_inq) ON DELETE SET NULL,
@@ -171,6 +172,8 @@ BEGIN
         CONSTRAINT CK_UF_Superficie CHECK (baulera_m2+cochera_m2 <= total_m2),
         CONSTRAINT CK_UF_cbu CHECK (LEN(cbu)=22 AND cbu NOT LIKE '%[^0-9]%'),
         CONSTRAINT UQ_UF_ConsorcioDepto UNIQUE (id_consorcio, piso, depto),
+        CONSTRAINT DF_UF_activo DEFAULT 1 FOR activo,
+        CONSTRAINT CK_UF_activo CHECK (activo=0 OR activo=1)
 
 ); END
 
@@ -181,7 +184,7 @@ BEGIN
         id_factura INT IDENTITY(1,1) NOT NULL,
         id_proveedor INT,
         nro_Factura VARCHAR(15) NOT NULL,
-        fecha_Emision DATE NOT NULL,
+        fecha_Emision DATETIME NOT NULL,
         importe DECIMAL(10,2) NOT NULL,
 
         CONSTRAINT PK_Factura PRIMARY KEY (id_factura),
@@ -289,7 +292,7 @@ IF OBJECT_ID('fin.ResumenBancarioCSV') IS NULL
 BEGIN
     CREATE TABLE fin.ResumenBancarioCSV(
         id_expensa INT NOT NULL,
-        fechaCreado DATE
+        fechaCreado DATETIME
 
         CONSTRAINT PK_ResumenCSV PRIMARY KEY (id_expensa),
         CONSTRAINT FK_Expensa_ResumenCSV FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa)
