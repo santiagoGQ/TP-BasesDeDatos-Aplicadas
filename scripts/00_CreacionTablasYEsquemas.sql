@@ -96,7 +96,7 @@ BEGIN
         precio_cocheraM2 DECIMAL(10,2) default 0,
         
         CONSTRAINT PK_consorcio PRIMARY KEY (id_consorcio),
-        CONSTRAINT FK_serv_limp_consorcio FOREIGN KEY (id_tipo_serv_limpieza) REFERENCES adm.TipoServicioLimpieza(id_tipo_serv_limpieza),
+        CONSTRAINT FK_serv_limp_consorcio FOREIGN KEY (id_tipo_serv_limpieza) REFERENCES adm.TipoServicioLimpieza(id_tipo_serv_limpieza) ON DELETE SET NULL,
         CONSTRAINT CK_consorcio_M2 CHECK (metros_totales > 0),
         CONSTRAINT CK_consorcio_precioBaulera CHECK (precio_bauleraM2 >=0),
         CONSTRAINT CK_consorcio_precioCochera CHECK (precio_cocheraM2 >=0)
@@ -240,7 +240,7 @@ BEGIN
         CONSTRAINT PK_GastoServicioPublico PRIMARY KEY (id_expensa, id_serv_pub),
         CONSTRAINT FK_Expensa_GastoServicioPublico FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
         CONSTRAINT FK_Factura_GastoServicioPublico FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura),
-        CONSTRAINT FK_TipoServPub_GastoServicioPublico FOREIGN KEY (id_tipo_serv_publico) REFERENCES adm.TipoServicioPublico(id_tipo_serv_publico)
+        CONSTRAINT FK_TipoServPub_GastoServicioPublico FOREIGN KEY (id_tipo_serv_publico) REFERENCES adm.TipoServicioPublico(id_tipo_serv_publico) ON DELETE SET NULL
 );END
 
 IF OBJECT_ID('gasto.General') IS NULL
