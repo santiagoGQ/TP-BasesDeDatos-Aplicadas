@@ -77,19 +77,22 @@ BEGIN
         id_proveedor INT IDENTITY(1,1) NOT NULL,
         razon_social VARCHAR(45) NOT NULL,
         cuit CHAR(11) NOT NULL,
-        email NVARCHAR(50),
-        telefono INT,
+        motivo VARCHAR(30) NOT NULL,
+        id_consorcio INT NOT NULL,
 
-        CONSTRAINT PK_Proveedor PRIMARY KEY (id_proveedor)
+        CONSTRAINT PK_Proveedor PRIMARY KEY (id_proveedor),
+        CONSTRAINT FK_ConsorcioProveedor FOREIGN KEY (id_consorcio) REFERENCES adm.Consorcio(id_consorcio),
+        CONSTRAINT CK_MotivoProveedor CHECK (motivo in ('BANCARIOS', 'ADMINISTRACION', 'SEGUROS',
+            'SERVICIOS PUBLICOS', 'GASTOS GENERALES','LIMPIEZA'))
 ); END
 
 IF OBJECT_ID('adm.Consorcio') IS NULL
 BEGIN
     CREATE TABLE adm.Consorcio(
         id_consorcio INT IDENTITY(1,1) NOT NULL,
-        id_tipo_serv_limpieza INT NOT NULL,
+        id_tipo_serv_limpieza INT,
         nombre VARCHAR(25) NOT NULL,
-        direccion VARCHAR(75),
+        direccion VARCHAR(75) NOT NULL,
         metros_totales SMALLINT NOT NULL,
         cantidad_uf TINYINT NOT NULL,
         precio_bauleraM2 DECIMAL(10,2) default 0,

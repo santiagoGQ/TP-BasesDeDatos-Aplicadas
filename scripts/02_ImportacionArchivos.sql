@@ -12,7 +12,7 @@
 --Cambia a COM2900_G04
 USE COM2900_G04
 GO
-
+-- TODO: Agregar transacciones para que se atomico
 CREATE OR ALTER PROCEDURE adm.ImportarConsorcios
     @ruta_archivo NVARCHAR(255)
 AS
@@ -100,11 +100,13 @@ BEGIN
     -- Ejemplo: C:\Importaciones\Consorcios.txt
     SET @ruta_txt = N'C:\Temp\UF por consorcio.txt';
 
+    
     ------------------------------------------------------------
     -- 1. Insertar consorcio y obtener su ID
     ------------------------------------------------------------
-    INSERT INTO adm.Consorcio (nombre, direccion, metros_totales, cantidad_uf, id_tipo_serv_limpieza)
-    VALUES (@nombre, @direccion, @metros_totales, @cantidad_uf, 1);
+    INSERT INTO adm.Consorcio (nombre, direccion, metros_totales, cantidad_uf, id_tipo_serv_limpieza,
+        precio_bauleraM2, precio_cocheraM2)
+    VALUES (@nombre, @direccion, @metros_totales, @cantidad_uf, 1, 2000.0, 5000.0); -- TODO: Agregar bien el tipo de servicio de limpieza
         
     SET @id_consorcio = SCOPE_IDENTITY();
 
@@ -169,3 +171,40 @@ END;
 GO
 
 --exec adm.ImportarConsorcios N'C:\Temp\datos varios.xlsx'
+
+CREATE OR ALTER PROCEDURE adm.ImportarProveedores
+    @ruta_archivo VARCHAR(255)
+AS
+BEGIN
+    SET NOCOUNT ON
+    
+    CREATE TABLE #ProveedoresTemp (
+        tipo_de_gasto VARCHAR(25),
+        razon_social VARCHAR(100),
+        detalle VARCHAR(25),
+        consorcio VARCHAR(25)
+    )
+
+    DECLARE @sql NVARCHAR(MAX);
+
+    -- Armo la consulta dinámica para importar desde Excel
+    SET @sql = N'
+        INSERT INTO #ProveedoresTemp (tipo_de_gasto, razon_social, detalle, consorcio)
+        SELECT
+            F1 as tipo_de_gasto,
+            F2 as razon_social, 
+            F3 as detalle, 
+            [Nombre del consorcio] as consorcio
+        FROM OPENROWSET(
+            ''Microsoft.ACE.OLEDB.12.0'',
+            ''Excel 12.0;HDR=YES;Database=' + @ruta_archivo + N''',
+            ''SELECT * FROM [Proveedores$]''
+        );
+    ';
+
+    EXEC sp_executesql @sql;
+
+    -- TODO: Terminar
+END
+
+-- exec adm.ImportarProveedores N'C:\Temp\datos varios.xlsx'
