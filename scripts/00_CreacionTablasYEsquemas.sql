@@ -96,10 +96,9 @@ BEGIN
     CREATE TABLE adm.Proveedor(
         id_proveedor INT IDENTITY(1,1) NOT NULL,
         razon_social NVARCHAR(51) NOT NULL,
-        cuit CHAR(11) NOT NULL,
         motivo VARCHAR(30) NOT NULL,
         id_consorcio INT NOT NULL,
-        cbu CHAR(22)
+        cuenta VARCHAR(50)
 
         CONSTRAINT PK_Proveedor PRIMARY KEY (id_proveedor),
         CONSTRAINT FK_ConsorcioProveedor FOREIGN KEY (id_consorcio) REFERENCES adm.Consorcio(id_consorcio),
