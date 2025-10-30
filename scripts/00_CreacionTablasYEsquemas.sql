@@ -71,21 +71,6 @@ BEGIN
         CONSTRAINT PK_TipoServicioPublico PRIMARY KEY (id_tipo_serv_publico)
 );END
 
-IF OBJECT_ID('adm.Proveedor') IS NULL
-BEGIN
-    CREATE TABLE adm.Proveedor(
-        id_proveedor INT IDENTITY(1,1) NOT NULL,
-        razon_social VARCHAR(45) NOT NULL,
-        cuit CHAR(11) NOT NULL,
-        motivo VARCHAR(30) NOT NULL,
-        id_consorcio INT NOT NULL,
-
-        CONSTRAINT PK_Proveedor PRIMARY KEY (id_proveedor),
-        CONSTRAINT FK_ConsorcioProveedor FOREIGN KEY (id_consorcio) REFERENCES adm.Consorcio(id_consorcio),
-        CONSTRAINT CK_MotivoProveedor CHECK (motivo in ('BANCARIOS', 'ADMINISTRACION', 'SEGUROS',
-            'SERVICIOS PUBLICOS', 'GASTOS GENERALES','LIMPIEZA'))
-); END
-
 IF OBJECT_ID('adm.Consorcio') IS NULL
 BEGIN
     CREATE TABLE adm.Consorcio(
@@ -104,6 +89,21 @@ BEGIN
         CONSTRAINT CK_consorcio_precioBaulera CHECK (precio_bauleraM2 >=0),
         CONSTRAINT CK_consorcio_precioCochera CHECK (precio_cocheraM2 >=0)
 
+); END
+
+IF OBJECT_ID('adm.Proveedor') IS NULL
+BEGIN
+    CREATE TABLE adm.Proveedor(
+        id_proveedor INT IDENTITY(1,1) NOT NULL,
+        razon_social VARCHAR(45) NOT NULL,
+        cuit CHAR(11) NOT NULL,
+        motivo VARCHAR(30) NOT NULL,
+        id_consorcio INT NOT NULL,
+
+        CONSTRAINT PK_Proveedor PRIMARY KEY (id_proveedor),
+        CONSTRAINT FK_ConsorcioProveedor FOREIGN KEY (id_consorcio) REFERENCES adm.Consorcio(id_consorcio),
+        CONSTRAINT CK_MotivoProveedor CHECK (motivo in ('BANCARIOS', 'ADMINISTRACION', 'SEGUROS',
+            'SERVICIOS PUBLICOS', 'GASTOS GENERALES','LIMPIEZA'))
 ); END
 
 IF OBJECT_ID('adm.Expensa') IS NULL
@@ -164,8 +164,7 @@ BEGIN
         coeficiente DECIMAL(3,2) NOT NULL,
         cbu CHAR(22),
         baulera_m2 TINYINT NOT NULL,
-        cochera_m2 TINYINT NOT NULL,
-        activo TINYINT NOT NULL
+        cochera_m2 TINYINT NOT NULL
 
         CONSTRAINT PK_UnidadFuncional PRIMARY KEY (id_uni_func),
         CONSTRAINT FK_Inq_UnidadFuncional FOREIGN KEY (id_inq) REFERENCES adm.Inquilino(id_inq) ON DELETE SET NULL,
@@ -174,9 +173,7 @@ BEGIN
         CONSTRAINT CK_UF_MayorCero CHECK (baulera_m2 >=0 AND cochera_m2 >=0),
         CONSTRAINT CK_UF_Superficie CHECK (baulera_m2+cochera_m2 <= total_m2),
         CONSTRAINT CK_UF_cbu CHECK (LEN(cbu)=22 AND cbu NOT LIKE '%[^0-9]%'),
-        CONSTRAINT UQ_UF_ConsorcioDepto UNIQUE (id_consorcio, piso, depto),
-        CONSTRAINT DF_UF_activo DEFAULT 1 FOR activo,
-        CONSTRAINT CK_UF_activo CHECK (activo=0 OR activo=1)
+        CONSTRAINT UQ_UF_ConsorcioDepto UNIQUE (id_consorcio, piso, depto)
 
 ); END
 

@@ -101,15 +101,6 @@ BEGIN
 END
 GO
 
-CREATE OR ALTER PROCEDURE adm.BorrarConsorcio
-	@id_consorcio INT
-AS
-BEGIN
-	--TODO: Borrado lógico o en cascada
-
-END
-GO
-
 CREATE OR ALTER PROCEDURE adm.BorrarProveedor
 	@id_proveedor INT
 AS

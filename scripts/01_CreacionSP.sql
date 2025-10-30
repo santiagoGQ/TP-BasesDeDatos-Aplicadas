@@ -31,20 +31,7 @@ BEGIN
 END
 GO
 
-CREATE OR ALTER PROCEDURE adm.AgregarProveedor
-	@razon_social VARCHAR(45),
-	@cuit CHAR(11),
-	@email NVARCHAR(50),
-	@telefono VARCHAR(10)
-AS
-BEGIN
-	DECLARE @email_formateado NVARCHAR(50)
-	SET @email_formateado = adm.FormatearEmail(@email)
-
-	INSERT INTO adm.Proveedor(razon_social, cuit, email, telefono) 
-		values (@razon_social, @cuit, @email_formateado, @telefono)
-END
-GO
+-- Falta SP nuevo de agregar proveedor
 
 CREATE OR ALTER PROCEDURE adm.AgregarPropietario
 	@nombre NVARCHAR(30),
@@ -362,13 +349,13 @@ CREATE OR ALTER PROCEDURE adm.AgregarExpensa
 AS
 BEGIN
 	BEGIN TRY
-		IF NOT EXISTS(SELECT TOP 1 FROM adm.Expensa WHERE id_consorcio=@id_consorcio)
+		IF NOT EXISTS(SELECT TOP 1 * FROM adm.Expensa WHERE id_consorcio=@id_consorcio)
 		BEGIN
 			RAISERROR('No existe consorcio con ese id.',16,1)
 			RETURN
 		END
 
-		IF NOT EXISTS(SELECT TOP 1 FROM adm.Expensa WHERE id_consorcio=@id_consorcio AND fechaGenerado=@fechaGenerado)
+		IF NOT EXISTS(SELECT TOP 1 * FROM adm.Expensa WHERE id_consorcio=@id_consorcio AND fechaGenerado=@fechaGenerado)
 		BEGIN
 			RAISERROR('Ya existe una expensa generada para ese consorcio en esa fecha.',16,1)
 			RETURN
@@ -380,7 +367,7 @@ BEGIN
 			RETURN
 		END
 		
-		IF @fechaPrimerVenc>=@fechaSegundoVenc
+		IF @fechaPrimerVenc>=@fechaSegVenc
 		BEGIN
 			RAISERROR('La fecha de segundo vencimiento no puede ser posterior al primer vencimiento.',16,1)
 			RETURN
@@ -434,8 +421,8 @@ BEGIN
             RETURN
         END
 
-		INSERT INTO fin.Factura (id_proveedor, nro_factura, fecha_emision, fecha_vencimiento, importe)
-			VALUES (@id_proveedor, @nro_factura, @fecha_emision, @fecha_venc, @importe)
+		INSERT INTO fin.Factura (id_proveedor, nro_factura, fecha_emision, importe)
+			VALUES (@id_proveedor, @nro_factura, @fecha_emision, @importe)
 	END TRY
 	BEGIN CATCH
 		PRINT('Error al agregar la factura: ' + ERROR_MESSAGE())

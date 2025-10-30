@@ -172,39 +172,119 @@ GO
 
 --exec adm.ImportarConsorcios N'C:\Temp\datos varios.xlsx'
 
-CREATE OR ALTER PROCEDURE adm.ImportarProveedores
-    @ruta_archivo VARCHAR(255)
+CREATE OR ALTER PROCEDURE adm.ImportarProveedores ---- Todo: implementar mensaje de error si el consorcio no existe sin dropear toda la ejecucion
+    @ruta_archivo NVARCHAR(255)
 AS
 BEGIN
-    SET NOCOUNT ON
-    
+    SET NOCOUNT ON;
+
+    ------------------------------------------------------------
+    -- 1. Tabla temporal para importar los datos del Excel
+    ------------------------------------------------------------
     CREATE TABLE #ProveedoresTemp (
-        tipo_de_gasto VARCHAR(25),
-        razon_social VARCHAR(100),
-        detalle VARCHAR(25),
-        consorcio VARCHAR(25)
+        tipo_de_gasto VARCHAR(25) COLLATE Latin1_General_CI_AS,
+        razon_social VARCHAR(100) COLLATE Latin1_General_CI_AS,
+        detalle VARCHAR(25) COLLATE Latin1_General_CI_AS,
+        consorcio VARCHAR(25) COLLATE Latin1_General_CI_AS
     )
 
+    ------------------------------------------------------------
+    -- 2. Importar los datos desde Excel (hoja 'Proveedores')
+    ------------------------------------------------------------
     DECLARE @sql NVARCHAR(MAX);
-
-    -- Armo la consulta dinámica para importar desde Excel
     SET @sql = N'
         INSERT INTO #ProveedoresTemp (tipo_de_gasto, razon_social, detalle, consorcio)
         SELECT
-            F1 as tipo_de_gasto,
-            F2 as razon_social, 
-            F3 as detalle, 
-            [Nombre del consorcio] as consorcio
+            F1 AS tipo_de_gasto,
+            F2 AS razon_social,
+            F3 AS detalle,
+            [Nombre del consorcio] AS consorcio
         FROM OPENROWSET(
             ''Microsoft.ACE.OLEDB.12.0'',
             ''Excel 12.0;HDR=YES;Database=' + @ruta_archivo + N''',
             ''SELECT * FROM [Proveedores$]''
         );
     ';
-
     EXEC sp_executesql @sql;
 
-    -- TODO: Terminar
-END
+    ------------------------------------------------------------
+    -- 3. Limpiar y preparar los datos antes del merge
+    ------------------------------------------------------------
+    ;WITH DatosLimpios AS (
+        SELECT 
+            tipo_de_gasto,
+            -- Si es limpieza y la razon_social = 'Serv. Limpieza', usar detalle como razon_social
+            CASE 
+                WHEN tipo_de_gasto LIKE '%LIMPIEZA%' 
+                     AND LTRIM(RTRIM(UPPER(razon_social))) = 'SERV. LIMPIEZA'
+                     THEN LTRIM(RTRIM(detalle))
+                ELSE LTRIM(RTRIM(razon_social))
+            END AS razon_social_final,
+
+            -- Si no es limpieza, limpiar el detalle y dejar solo números
+            CASE 
+                WHEN tipo_de_gasto NOT LIKE '%LIMPIEZA%' 
+                     THEN REPLACE(REPLACE(REPLACE(
+                            TRANSLATE(detalle, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ', REPLICATE(' ', 53)), ' ', ''), '-', ''), '.', '')
+                ELSE NULL
+            END AS cbu_final,
+
+            LTRIM(RTRIM(consorcio)) AS consorcio
+        FROM #ProveedoresTemp
+    )
+
+    ------------------------------------------------------------
+    -- 4. MERGE: Insertar o actualizar en adm.Proveedor
+    ------------------------------------------------------------
+    MERGE adm.Proveedor AS destino
+    USING (
+        SELECT 
+            c.id_consorcio,
+            d.tipo_de_gasto,
+            d.razon_social_final,
+            d.cbu_final
+        FROM DatosLimpios d
+        INNER JOIN adm.Consorcio c ON c.nombre = d.consorcio
+        WHERE d.tipo_de_gasto NOT LIKE '%LIMPIEZA%' -- por ahora ignoramos limpieza
+    ) AS origen
+    ON destino.id_consorcio = origen.id_consorcio
+       AND destino.motivo = origen.tipo_de_gasto
+    WHEN MATCHED THEN
+        UPDATE SET 
+            destino.razon_social = origen.razon_social_final,
+            destino.cbu = origen.cbu_final
+    WHEN NOT MATCHED THEN
+        INSERT (razon_social, cuit, motivo, id_consorcio)
+        VALUES (
+            origen.razon_social_final,
+            '00000000000',              -- cuit placeholder
+            origen.tipo_de_gasto,
+            origen.id_consorcio
+        );
+
+    ------------------------------------------------------------
+    -- 5. Inserción específica para los de limpieza
+    ------------------------------------------------------------
+    INSERT INTO adm.Proveedor (razon_social, cuit, motivo, id_consorcio)
+    SELECT 
+        d.razon_social_final,
+        '00000000000',
+        d.tipo_de_gasto,
+        c.id_consorcio
+    FROM DatosLimpios d
+    INNER JOIN adm.Consorcio c ON c.nombre = d.consorcio
+    WHERE d.tipo_de_gasto LIKE '%LIMPIEZA%'
+      AND NOT EXISTS (
+            SELECT 1 
+            FROM adm.Proveedor p 
+            WHERE p.id_consorcio = c.id_consorcio
+              AND p.motivo = d.tipo_de_gasto
+        );
+
+    ------------------------------------------------------------
+    DROP TABLE #ProveedoresTemp;
+END;
+GO
+
 
 -- exec adm.ImportarProveedores N'C:\Temp\datos varios.xlsx'
