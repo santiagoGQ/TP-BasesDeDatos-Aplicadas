@@ -305,3 +305,78 @@ delete from adm.Proveedor
 --y formatear para que solo haya numeros: OK
 
 */
+
+CREATE OR ALTER PROCEDURE adm.ImportarInquilinoYPropietarios
+    @ruta_archivo NVARCHAR(255)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    ------------------------------------------------------------
+    -- 1. Crear tabla temporal
+    ------------------------------------------------------------
+    CREATE TABLE #InqPropsTemp (
+        nombre NVARCHAR(100),
+        apellido NVARCHAR(100),
+        dni NVARCHAR(20),
+        email_personal NVARCHAR(200),
+        telefono_contacto NVARCHAR(20),
+        cvu_cbu NVARCHAR(30),
+        inquilino BIT
+    );
+
+    ------------------------------------------------------------
+    -- 2. Importar desde el CSV
+    ------------------------------------------------------------
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'
+        BULK INSERT #InqPropsTemp
+        FROM ''' + @ruta_archivo + N'''
+        WITH (
+            FIRSTROW = 2,
+            FIELDTERMINATOR = '';'',
+            ROWTERMINATOR = ''\n'',
+            CODEPAGE = ''1252''
+        );
+    ';
+    EXEC sp_executesql @sql;
+
+    DECLARE @id INT = 1, @max INT;
+    SELECT @max = COUNT(*) FROM #InqPropsTemp;
+
+    WHILE @id <= @max
+    BEGIN
+        DECLARE @nombre NVARCHAR(30),
+                @apellido NVARCHAR(30),
+                @dni INT,
+                @email NVARCHAR(50),
+                @telefono INT,
+                @cbu CHAR(22),
+                @inquilino BIT;
+
+        SELECT TOP 1
+            @nombre = nombre,
+            @apellido = apellido,
+            @dni = dni,
+            @email = email_personal,
+            @telefono = telefono_contacto,
+            @inquilino = inquilino,
+            @cbu = cvu_cbu
+        FROM #InqPropsTemp
+
+        IF @inquilino = 1
+            EXEC adm.AgregarInquilino @nombre, @apellido, @dni, @email, @telefono, @cbu;
+        ELSE
+            EXEC adm.AgregarPropietario @nombre, @apellido, @dni, @email, @telefono, @cbu;
+        DELETE TOP (1) FROM #InqPropsTemp;
+        SET @id += 1;
+    END
+
+
+END;
+GO
+
+--exec adm.ImportarInquilinoYPropietarios N'C:\Temp\Inquilino-propietarios-datos.csv'
+--GO
+--PRINT adm.FormatearNombreOApellido('Mar¡a')
+-- select * from adm.Propietario

@@ -46,9 +46,25 @@ BEGIN
 	DECLARE @apellido_formateado NVARCHAR(30) = adm.FormatearNombreOApellido(@apellido)
 	DECLARE @email_formateado NVARCHAR(50) = adm.FormatearEmail(@email)
 
-	INSERT INTO adm.Propietario(nombre, apellido, dni, email, telefono, cbu)
-		VALUES(@nombre_formateado, @apellido_formateado, @dni, @email_formateado, @telefono, @cbu)
-	
+	BEGIN TRY 
+	-- Si el propietario existe, lo actualizamos
+	IF EXISTS (SELECT 1 from adm.Propietario Prop where Prop.dni = @dni)
+		UPDATE adm.Propietario
+        SET nombre = @nombre,
+            apellido = @apellido,
+            email = @email,
+            telefono = @telefono,
+            cbu = @cbu
+        WHERE DNI = @dni;
+	ELSE
+		INSERT INTO adm.Propietario(nombre, apellido, dni, email, telefono, cbu)
+			VALUES(@nombre_formateado, @apellido_formateado, @dni, @email_formateado, @telefono, @cbu)
+	END TRY
+
+	BEGIN CATCH
+		PRINT 'Ocurrió un error al agregar un propietario.';
+		PRINT 'Mensaje: ' + ERROR_MESSAGE();
+	END CATCH
 END
 GO
 
@@ -65,8 +81,24 @@ BEGIN
 	DECLARE @apellido_formateado NVARCHAR(30) = adm.FormatearNombreOApellido(@apellido)
 	DECLARE @email_formateado NVARCHAR(50) = adm.FormatearEmail(@email)
 
-	INSERT INTO adm.Inquilino(nombre, apellido, dni, email, telefono, cbu)
-		VALUES(@nombre_formateado, @apellido_formateado, @dni, @email_formateado, @telefono, @cbu)
+	BEGIN TRY
+	-- Si el inquilino existe, lo actualizamos
+	IF EXISTS (SELECT 1 from adm.Inquilino Inq where Inq.dni = @dni)
+		UPDATE adm.Inquilino
+        SET nombre = @nombre,
+            apellido = @apellido,
+            email = @email,
+            telefono = @telefono,
+            cbu = @cbu
+        WHERE DNI = @dni;
+	ELSE
+		INSERT INTO adm.Inquilino(nombre, apellido, dni, email, telefono, cbu)
+			VALUES(@nombre_formateado, @apellido_formateado, @dni, @email_formateado, @telefono, @cbu)
+	END TRY
+	BEGIN CATCH
+		PRINT 'Ocurrió un error al agregar un inquilino.';
+		PRINT 'Mensaje: ' + ERROR_MESSAGE();
+	END CATCH
 END
 GO
 

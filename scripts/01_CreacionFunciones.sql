@@ -24,7 +24,10 @@ BEGIN
 
     -- Elimina espacios intermedios
     SET @resultado = REPLACE(@resultado, ' ', '')
-
+    -- Corregimos si hay algun error de caracteres
+    SET @resultado = REPLACE(@resultado, '¥', 'ñ');
+    SET @resultado = REPLACE(@resultado, '¡', 'i');
+    SET @resultado = REPLACE(@resultado, '‚', 'e');
     -- Convertimos todo a minusculas
     SET @resultado = LOWER(@resultado)
 
@@ -40,6 +43,12 @@ AS
 BEGIN
     -- Elimina espacios al principio y al final
     DECLARE @resultado NVARCHAR(30) = LTRIM(RTRIM(@cadena))
+    
+    -- Corregimos si hay algun error de caracteres.
+    SET @resultado = REPLACE(@resultado, '¥', 'Ñ');
+    SET @resultado = REPLACE(@resultado, '¡', 'Í');
+    SET @resultado = REPLACE(@resultado, '‚', 'é');
+
     -- Hacemos todas las letras mayusculas
     SET @resultado = UPPER(@resultado)
 

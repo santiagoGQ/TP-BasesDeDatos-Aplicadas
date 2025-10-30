@@ -127,7 +127,7 @@ BEGIN
         id_prop INT IDENTITY(1,1),
         nombre NVARCHAR(30) NOT NULL,
         apellido NVARCHAR(30) NOT NULL,
-        dni INT NOT NULL,
+        dni INT NOT NULL, --TODO Agregamos Unique?
         email NVARCHAR(50) NOT NULL,
         telefono INT NOT NULL,
         cbu CHAR(22) NOT NULL,
@@ -142,7 +142,7 @@ BEGIN
         id_inq INT IDENTITY(1,1),
         nombre NVARCHAR(30) NOT NULL,
         apellido NVARCHAR(30) NOT NULL,
-        dni INT NOT NULL,
+        dni INT NOT NULL, --TODO Agregamos Unique?
         email NVARCHAR(50) NOT NULL,
         telefono INT NOT NULL,
         cbu CHAR(22) NOT NULL,
