@@ -210,7 +210,6 @@ BEGIN
     ------------------------------------------------------------
     -- 3. Limpiar y preparar los datos antes del merge
     ------------------------------------------------------------
-    ;WITH DatosLimpios AS (
         SELECT 
             tipo_de_gasto,
             -- Si es limpieza y la razon_social = 'Serv. Limpieza', usar detalle como razon_social
@@ -230,37 +229,37 @@ BEGIN
             END AS cbu_final,
 
             LTRIM(RTRIM(consorcio)) AS consorcio
+        INTO #DatosLimpios
         FROM #ProveedoresTemp
-    )
 
     ------------------------------------------------------------
     -- 4. MERGE: Insertar o actualizar en adm.Proveedor
     ------------------------------------------------------------
     MERGE adm.Proveedor AS destino
-    USING (
-        SELECT 
-            c.id_consorcio,
-            d.tipo_de_gasto,
-            d.razon_social_final,
-            d.cbu_final
-        FROM DatosLimpios d
-        INNER JOIN adm.Consorcio c ON c.nombre = d.consorcio
-        WHERE d.tipo_de_gasto NOT LIKE '%LIMPIEZA%' -- por ahora ignoramos limpieza
-    ) AS origen
-    ON destino.id_consorcio = origen.id_consorcio
-       AND destino.motivo = origen.tipo_de_gasto
-    WHEN MATCHED THEN
-        UPDATE SET 
-            destino.razon_social = origen.razon_social_final,
-            destino.cbu = origen.cbu_final
-    WHEN NOT MATCHED THEN
-        INSERT (razon_social, cuit, motivo, id_consorcio)
-        VALUES (
-            origen.razon_social_final,
-            '00000000000',              -- cuit placeholder
-            origen.tipo_de_gasto,
-            origen.id_consorcio
-        );
+       USING (
+           SELECT 
+               c.id_consorcio,
+               d.tipo_de_gasto,
+               d.razon_social_final,
+               d.cbu_final
+           FROM #DatosLimpios d
+           INNER JOIN adm.Consorcio c ON c.nombre = d.consorcio
+           WHERE d.tipo_de_gasto NOT LIKE '%LIMPIEZA%' -- por ahora ignoramos limpieza
+       ) AS origen
+       ON destino.id_consorcio = origen.id_consorcio
+          AND destino.motivo = origen.tipo_de_gasto
+       WHEN MATCHED THEN
+           UPDATE SET 
+               destino.razon_social = origen.razon_social_final,
+               destino.cbu = origen.cbu_final
+       WHEN NOT MATCHED THEN
+           INSERT (razon_social, cuit, motivo, id_consorcio)
+           VALUES (
+               origen.razon_social_final,
+               '00000000000',              -- cuit placeholder
+               origen.tipo_de_gasto,
+               origen.id_consorcio
+           );
 
     ------------------------------------------------------------
     -- 5. Inserción específica para los de limpieza
@@ -271,7 +270,7 @@ BEGIN
         '00000000000',
         d.tipo_de_gasto,
         c.id_consorcio
-    FROM DatosLimpios d
+    FROM #DatosLimpios d
     INNER JOIN adm.Consorcio c ON c.nombre = d.consorcio
     WHERE d.tipo_de_gasto LIKE '%LIMPIEZA%'
       AND NOT EXISTS (
@@ -283,8 +282,17 @@ BEGIN
 
     ------------------------------------------------------------
     DROP TABLE #ProveedoresTemp;
+    DROP TABLE #DatosLimpios;
 END;
 GO
 
+/*
+adm.AgregarTipoServicioLimpieza 'Limpieza test'
+exec adm.ImportarConsorcios N'C:\Temp\datos varios.xlsx'
+exec adm.ImportarProveedores N'C:\Temp\datos varios.xlsx'
 
--- exec adm.ImportarProveedores N'C:\Temp\datos varios.xlsx'
+select * from adm.Consorcio
+select * from adm.Proveedor order by id_consorcio
+
+delete from adm.Proveedor
+*/

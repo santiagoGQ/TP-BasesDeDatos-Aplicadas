@@ -95,15 +95,16 @@ IF OBJECT_ID('adm.Proveedor') IS NULL
 BEGIN
     CREATE TABLE adm.Proveedor(
         id_proveedor INT IDENTITY(1,1) NOT NULL,
-        razon_social VARCHAR(45) NOT NULL,
+        razon_social NVARCHAR(51) NOT NULL,
         cuit CHAR(11) NOT NULL,
         motivo VARCHAR(30) NOT NULL,
         id_consorcio INT NOT NULL,
+        cbu CHAR(22)
 
         CONSTRAINT PK_Proveedor PRIMARY KEY (id_proveedor),
         CONSTRAINT FK_ConsorcioProveedor FOREIGN KEY (id_consorcio) REFERENCES adm.Consorcio(id_consorcio),
-        CONSTRAINT CK_MotivoProveedor CHECK (motivo in ('BANCARIOS', 'ADMINISTRACION', 'SEGUROS',
-            'SERVICIOS PUBLICOS', 'GASTOS GENERALES','LIMPIEZA'))
+        CONSTRAINT CK_MotivoProveedor CHECK (motivo in 
+            ('GASTOS BANCARIOS','GASTOS DE ADMINISTRACION','SEGUROS','SERVICIOS PUBLICOS','GASTOS DE LIMPIEZA'))
 ); END
 
 IF OBJECT_ID('adm.Expensa') IS NULL
