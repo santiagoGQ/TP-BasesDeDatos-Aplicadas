@@ -1,4 +1,4 @@
---------------------------------------------------
+ï»¿--------------------------------------------------
 -- BASES DE DATOS APLICADAS
 --  GRUPO 04
 --  INTEGRANTES
@@ -29,7 +29,7 @@ BEGIN
 
     DECLARE @sql NVARCHAR(MAX);
 
-    -- Armo la consulta dinámica para importar desde Excel
+    -- Armo la consulta dinÃ¡mica para importar desde Excel
     SET @sql = N'
         INSERT INTO #ConsorciosTemp (nombreConsorcio, domicilio, cantUnidadesFuncionales, m2Totales)
         SELECT
@@ -96,7 +96,7 @@ BEGIN
     DECLARE @id_consorcio INT;
     DECLARE @ruta_txt NVARCHAR(255);
 
-    -- Ruta al archivo TXT (ajustar según tu entorno)
+    -- Ruta al archivo TXT (ajustar segÃºn tu entorno)
     -- Ejemplo: C:\Importaciones\Consorcios.txt
     SET @ruta_txt = N'C:\Temp\UF por consorcio.txt';
 
@@ -220,7 +220,7 @@ BEGIN
                 ELSE LTRIM(RTRIM(razon_social))
             END AS razon_social_final,
 
-            -- Si no es limpieza, limpiar el detalle y dejar solo números
+            -- Si no es limpieza, limpiar el detalle y dejar solo nÃºmeros
             CASE 
                 WHEN tipo_de_gasto NOT LIKE '%LIMPIEZA%' 
                      THEN REPLACE(REPLACE(REPLACE(
@@ -262,7 +262,7 @@ BEGIN
            );
 
     ------------------------------------------------------------
-    -- 5. Inserción específica para los de limpieza
+    -- 5. InserciÃ³n especÃ­fica para los de limpieza
     ------------------------------------------------------------
     INSERT INTO adm.Proveedor (razon_social, motivo, id_consorcio, cuenta)
     SELECT 
@@ -287,34 +287,12 @@ BEGIN
 END;
 GO
 
-/*
-adm.AgregarTipoServicioLimpieza 'Limpieza test'
-exec adm.ImportarConsorcios N'C:\Temp\datos varios.xlsx'
-exec adm.ImportarProveedores N'C:\Temp\datos varios.xlsx'
-
-select * from adm.Consorcio
-select * from adm.Proveedor order by id_consorcio
-
-delete from adm.Proveedor
-
---TO DO
---borrar campo cbu y cuit de proveedor
---reemplazar por 'cuenta' varchar: OK
-
---leer data de la columna 3 
---y formatear para que solo haya numeros: OK
-
-*/
-
 CREATE OR ALTER PROCEDURE adm.ImportarInquilinoYPropietarios
     @ruta_archivo NVARCHAR(255)
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    ------------------------------------------------------------
-    -- 1. Crear tabla temporal
-    ------------------------------------------------------------
     CREATE TABLE #InqPropsTemp (
         nombre NVARCHAR(100),
         apellido NVARCHAR(100),
@@ -325,9 +303,6 @@ BEGIN
         inquilino BIT
     );
 
-    ------------------------------------------------------------
-    -- 2. Importar desde el CSV
-    ------------------------------------------------------------
     DECLARE @sql NVARCHAR(MAX);
     SET @sql = N'
         BULK INSERT #InqPropsTemp
@@ -372,11 +347,176 @@ BEGIN
         SET @id += 1;
     END
 
+    DROP TABLE #InqPropsTemp
 
 END;
 GO
 
---exec adm.ImportarInquilinoYPropietarios N'C:\Temp\Inquilino-propietarios-datos.csv'
---GO
---PRINT adm.FormatearNombreOApellido('Mar¡a')
--- select * from adm.Propietario
+CREATE OR ALTER PROCEDURE adm.ImportarRelacionEntreUFyPropInq
+    @ruta_archivo NVARCHAR(255)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    CREATE TABLE #RelacionesTemp (
+        cbu_cvu NVARCHAR(50),
+        nombre_consorcio NVARCHAR(50),
+        nro_uf NVARCHAR(4),
+        piso NCHAR(2),
+        departamento NCHAR(1)
+    );
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'
+        BULK INSERT #RelacionesTemp
+        FROM ''' + @ruta_archivo + N'''
+        WITH (
+            FIRSTROW = 2,
+            FIELDTERMINATOR = ''|'',
+            ROWTERMINATOR = ''\n'',
+            CODEPAGE = ''1252''
+        );
+    ';
+    EXEC sp_executesql @sql;
+
+    DECLARE @id INT = 1, @max INT;
+    SELECT @max = COUNT(*) FROM #RelacionesTemp;
+
+    WHILE @id <= @max
+    BEGIN
+        DECLARE @cbu_cvu NVARCHAR(50),
+                @nombre_consorcio NVARCHAR(50),
+                @nro_uf NVARCHAR(4),
+                @piso NCHAR(2),
+                @departamento NCHAR(1)
+
+        SELECT TOP 1
+            @cbu_cvu = cbu_cvu,
+            @nombre_consorcio = nombre_consorcio,
+            @nro_uf = nro_uf,
+            @piso = piso,
+            @departamento = departamento
+        FROM #RelacionesTemp
+
+        EXEC adm.AsociarHuespedAUnidadFuncional @cbu_cvu, @nombre_consorcio, @nro_uf, @piso, @departamento
+        
+        DELETE TOP (1) FROM #RelacionesTemp;
+        SET @id += 1;
+    END
+
+END
+GO
+
+CREATE OR ALTER PROCEDURE adm.AsociarHuespedAUnidadFuncional
+    @cbu CHAR(22),
+    @nombre_consorcio VARCHAR(25),
+    @nro_uf NVARCHAR(4),
+    @piso NCHAR(2),
+    @departamento NCHAR(1)
+AS
+BEGIN
+    DECLARE @id_consorcio INT = (SELECT id_consorcio FROM adm.Consorcio where nombre = @nombre_consorcio)
+    DECLARE @id_inquilino INT = (SELECT id_inq FROM adm.Inquilino WHERE cbu = @cbu)
+    DECLARE @id_propietario INT = (SELECT id_prop FROM adm.Propietario WHERE cbu = @cbu)
+
+     UPDATE  adm.UnidadFuncional
+        SET id_inq = @id_inquilino,
+            id_prop = @id_propietario,
+            cbu = @cbu
+        WHERE id_consorcio = @id_consorcio AND piso = @piso AND depto = @departamento;
+
+END
+GO
+
+CREATE OR ALTER PROCEDURE adm.ImportarGastos -- TODO: Habria que poner una verificacion de que si los pagos ya fueron ingresados que no se pueda reemplazar
+    @ruta_archivo NVARCHAR(255)
+AS
+BEGIN
+
+    CREATE TABLE #GastosTemp (
+        Nombre_del_consorcio NVARCHAR(100),
+        Mes VARCHAR(20),
+        BANCARIOS DECIMAL(18,2),
+        LIMPIEZA DECIMAL(18,2),
+        ADMINISTRACION DECIMAL(18,2),
+        SEGUROS DECIMAL(18,2),
+        GASTOS_GENERALES DECIMAL(18,2),
+        SERVICIOS_PUBLICOS_Agua DECIMAL(18,2),
+        SERVICIOS_PUBLICOS_Luz DECIMAL(18,2)
+    );
+
+    DECLARE @json NVARCHAR(MAX);
+    DECLARE @sql NVARCHAR(MAX);
+
+    SET @sql = N'
+    SELECT @jsonOut = BulkColumn
+    FROM OPENROWSET(
+        BULK ''' + @ruta_archivo + ''',
+        SINGLE_CLOB
+    ) AS j;
+    ';
+    EXEC sp_executesql @sql, N'@jsonOut NVARCHAR(MAX) OUTPUT', @jsonOut=@json OUTPUT;
+
+    INSERT INTO #GastosTemp 
+    SELECT
+        JSON_VALUE(value, '$."Nombre del consorcio"'),
+        REPLACE(JSON_VALUE(value, '$.Mes'), ' ', ''),
+        fin.FormatearNumero(JSON_VALUE(value, '$.BANCARIOS')),
+        fin.FormatearNumero(JSON_VALUE(value, '$.LIMPIEZA')),
+        fin.FormatearNumero(JSON_VALUE(value, '$.ADMINISTRACION')),
+        fin.FormatearNumero(JSON_VALUE(value, '$.SEGUROS')),
+        fin.FormatearNumero(JSON_VALUE(value, '$."GASTOS GENERALES"')),
+        fin.FormatearNumero(JSON_VALUE(value, '$."SERVICIOS PUBLICOS-Agua"')),
+        fin.FormatearNumero(JSON_VALUE(value, '$."SERVICIOS PUBLICOS-Luz"'))
+    FROM OPENJSON(@json);
+
+    DECLARE @id INT = 1, @max INT;
+    SELECT @max = COUNT(*) FROM #GastosTemp;
+       
+
+    WHILE @id <= @max
+    BEGIN
+        DECLARE @nombre_consorcio NVARCHAR(100),
+            @mes VARCHAR(20),
+            @bancarios DECIMAL(18,2),
+            @limpieza DECIMAL(18,2),
+            @administracion DECIMAL(18,2),
+            @seguros DECIMAL(18,2),
+            @gastos_generales DECIMAL(18,2),
+            @servicios_publicos_agua DECIMAL(18,2),
+            @servicios_publicos_luz DECIMAL(18,2)
+
+
+        SELECT TOP 1
+            @nombre_consorcio = Nombre_del_consorcio,
+            @mes = Mes,
+            @bancarios = BANCARIOS,
+            @limpieza = LIMPIEZA,
+            @administracion = ADMINISTRACION,
+            @seguros = SEGUROS,
+            @gastos_generales = GASTOS_GENERALES,
+            @servicios_publicos_agua = SERVICIOS_PUBLICOS_Agua,
+            @servicios_publicos_luz = SERVICIOS_PUBLICOS_Luz
+
+            FROM #GastosTemp
+
+        -- TODO: Iterar sobre los gastosSP
+        
+        DELETE TOP (1) FROM #GastosTemp;
+        SET @id += 1;
+    END
+END
+/*
+Para probar
+
+adm.AgregarTipoServicioLimpieza 'Limpieza test'
+exec adm.ImportarConsorcios N'C:\Temp\datos varios.xlsx'
+exec adm.ImportarProveedores N'C:\Temp\datos varios.xlsx'
+exec adm.ImportarInquilinoYPropietarios N'C:\Temp\Inquilino-propietarios-datos.csv'
+exec adm.ImportarRelacionEntreUFyPropInq N'C:\Temp\Inquilino-propietarios-UF.csv'
+select * from adm.UnidadFuncional
+
+exec adm.ImportarGastos N'C:\Temp\Servicios.Servicios.json'
+
+
+*/

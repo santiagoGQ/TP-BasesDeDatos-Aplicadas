@@ -151,7 +151,7 @@ BEGIN
         
 ); END
 
-IF OBJECT_ID('adm.UnidadFuncional') IS NULL
+IF OBJECT_ID('adm.UnidadFuncional') IS NULL -- TODO: Yo agregaria numerito de UF, que seria que numero de UF es concorde al consorcio (no es el id).
 BEGIN
     CREATE TABLE adm.UnidadFuncional(
         id_uni_func INT IDENTITY(1,1),

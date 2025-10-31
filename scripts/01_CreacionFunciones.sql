@@ -90,3 +90,19 @@ RETURN( SELECT
             END AS cochera_m2
 )
 GO
+
+CREATE OR ALTER FUNCTION fin.FormatearNumero (@numero NVARCHAR(50))
+    RETURNS DECIMAL(18,2)
+AS
+BEGIN
+    DECLARE @numero_formateado NVARCHAR(50) = REPLACE(@numero, '.', '')
+    SET @numero_formateado = REPLACE(@numero_formateado, ',', '')
+    SET @numero_formateado = substring(
+                                @numero_formateado, 0, len(@numero_formateado)-1)
+                                + '.' + 
+                                substring(@numero_formateado,len(@numero_formateado)-1,len(@numero_formateado)
+                             )
+    
+    RETURN CAST(@numero_formateado AS DECIMAL(18,2))
+END
+GO
