@@ -181,28 +181,26 @@ BEGIN
 IF OBJECT_ID('fin.Factura') IS NULL
 BEGIN
     CREATE TABLE fin.Factura(
-        id_factura INT IDENTITY(1,1) NOT NULL,
+        nro_factura INT IDENTITY(1,1) NOT NULL,
         id_proveedor INT,
-        nro_Factura VARCHAR(15) NOT NULL,
         fecha_Emision DATETIME NOT NULL,
         importe DECIMAL(10,2) NOT NULL,
 
-        CONSTRAINT PK_Factura PRIMARY KEY (id_factura),
+        CONSTRAINT PK_Factura PRIMARY KEY (nro_factura),
         CONSTRAINT FK_Proveedor_Factura FOREIGN KEY (id_proveedor) REFERENCES adm.Proveedor(id_proveedor) ON DELETE SET NULL,
-        CONSTRAINT CK_Factura_Importe CHECK (importe>=0),
-        CONSTRAINT UQ_Factura_nro UNIQUE (nro_factura)
+        CONSTRAINT CK_Factura_Importe CHECK (importe>=0)
 );END
 
 IF OBJECT_ID('gasto.Limpieza') IS NULL
 BEGIN
     CREATE TABLE gasto.Limpieza(
         id_expensa INT NOT NULL,
-        id_factura INT NOT NULL,
+        nro_factura INT NOT NULL,
         descripcion varchar(100),
 
         CONSTRAINT PK_GastoLimpieza PRIMARY KEY (id_expensa),
         CONSTRAINT FK_Expensa_GastoLimpieza FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
-        CONSTRAINT FK_Factura_GastoLimpieza FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura)
+        CONSTRAINT FK_Factura_GastoLimpieza FOREIGN KEY (nro_factura) REFERENCES fin.Factura(nro_factura)
 );END
 
 IF OBJECT_ID('gasto.Seguro') IS NULL
@@ -210,12 +208,12 @@ BEGIN
     CREATE TABLE gasto.Seguro(
         id_seguro INT IDENTITY(1,1) NOT NULL,
         id_expensa INT NOT NULL,
-        id_factura INT NOT NULL,
+        nro_factura INT NOT NULL,
         descripcion varchar(100),
 
         CONSTRAINT PK_GastoSeguro PRIMARY KEY (id_seguro),
         CONSTRAINT FK_Expensa_GastoSeguro FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
-        CONSTRAINT FK_Factura_GastoSeguro FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura)
+        CONSTRAINT FK_Factura_GastoSeguro FOREIGN KEY (nro_factura) REFERENCES fin.Factura(nro_factura)
 );END
 
 IF OBJECT_ID('gasto.Administracion') IS NULL
@@ -223,12 +221,12 @@ BEGIN
     CREATE TABLE gasto.Administracion(
         id_admin INT IDENTITY(1,1) NOT NULL,
         id_expensa INT NOT NULL,
-        id_factura INT NOT NULL,
+        nro_factura INT NOT NULL,
         descripcion varchar(100),
 
         CONSTRAINT PK_GastoAdmin PRIMARY KEY (id_admin),
         CONSTRAINT FK_Expensa_GastoAdmin FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
-        CONSTRAINT FK_Factura_GastoAdmin FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura)
+        CONSTRAINT FK_Factura_GastoAdmin FOREIGN KEY (nro_factura) REFERENCES fin.Factura(nro_factura)
 );END
 
 IF OBJECT_ID('gasto.ServicioPublico') IS NULL
@@ -236,13 +234,13 @@ BEGIN
     CREATE TABLE gasto.ServicioPublico(
         id_serv_pub INT IDENTITY(1,1) NOT NULL,
         id_expensa INT NOT NULL,
-        id_factura INT NOT NULL,
+        nro_factura INT NOT NULL,
         id_tipo_serv_publico INT,
         descripcion varchar(100),
 
         CONSTRAINT PK_GastoServicioPublico PRIMARY KEY (id_expensa, id_serv_pub),
         CONSTRAINT FK_Expensa_GastoServicioPublico FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
-        CONSTRAINT FK_Factura_GastoServicioPublico FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura),
+        CONSTRAINT FK_Factura_GastoServicioPublico FOREIGN KEY (nro_factura) REFERENCES fin.Factura(nro_factura),
         CONSTRAINT FK_TipoServPub_GastoServicioPublico FOREIGN KEY (id_tipo_serv_publico) REFERENCES adm.TipoServicioPublico(id_tipo_serv_publico) ON DELETE SET NULL
 );END
 
@@ -251,12 +249,12 @@ BEGIN
     CREATE TABLE gasto.General(
         id_gasto_general INT IDENTITY(1,1) NOT NULL,
         id_expensa INT NOT NULL,
-        id_factura INT NOT NULL,
+        nro_factura INT NOT NULL,
         descripcion varchar(100),
 
         CONSTRAINT PK_GastoGeneral PRIMARY KEY (id_expensa, id_gasto_general),
         CONSTRAINT FK_Expensa_GastoGeneral FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
-        CONSTRAINT FK_Factura_GastoGeneral FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura)
+        CONSTRAINT FK_Factura_GastoGeneral FOREIGN KEY (nro_factura) REFERENCES fin.Factura(nro_factura)
 );END
 
 IF OBJECT_ID('gasto.Extraordinario') IS NULL
@@ -264,14 +262,14 @@ BEGIN
     CREATE TABLE gasto.Extraordinario(
         id_extraordinario INT IDENTITY(1,1) NOT NULL,
         id_expensa INT NOT NULL,
-        id_factura INT NOT NULL,
+        nro_factura INT NOT NULL,
         descripcion varchar(100),
         nro_cuota TINYINT,
         total_cuotas TINYINT,
 
         CONSTRAINT PK_GastoExtraordinario PRIMARY KEY (id_expensa, id_extraordinario),
         CONSTRAINT FK_Expensa_GastoExtraordinario FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
-        CONSTRAINT FK_Factura_GastoExtraordinario FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura),
+        CONSTRAINT FK_Factura_GastoExtraordinario FOREIGN KEY (nro_factura) REFERENCES fin.Factura(nro_factura),
         CONSTRAINT CK_Extraordinario_Cuotas CHECK(nro_cuota<=total_cuotas)
 );END
 
@@ -280,12 +278,12 @@ BEGIN
     CREATE TABLE gasto.Bancario(
         id_bancario INT IDENTITY(1,1) NOT NULL,
         id_expensa INT NOT NULL,
-        id_factura INT NOT NULL,
+        nro_factura INT NOT NULL,
         descripcion varchar(100),
 
         CONSTRAINT PK_GastoBancario PRIMARY KEY (id_expensa, id_bancario),
         CONSTRAINT FK_Expensa_GastoBancario FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
-        CONSTRAINT FK_Factura_GastoBancario FOREIGN KEY (id_factura) REFERENCES fin.Factura(id_factura)
+        CONSTRAINT FK_Factura_GastoBancario FOREIGN KEY (nro_factura) REFERENCES fin.Factura(nro_factura)
 );END
 
 IF OBJECT_ID('fin.ResumenBancarioCSV') IS NULL

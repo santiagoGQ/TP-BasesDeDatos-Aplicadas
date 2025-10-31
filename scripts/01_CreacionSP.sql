@@ -265,98 +265,156 @@ GO
 --		 el nombre de la tabla. Salvo el gasto de limpieza y el extraordinario
 
 CREATE OR ALTER PROCEDURE gasto.AgregarGastoAdministracion
+	@id_consorcio INT,
 	@id_expensa INT,
-	@id_factura INT,
+	@importe DECIMAL(18,2),
+	@fecha_expensa DATE,
 	@descripcion VARCHAR(100)
 AS
 BEGIN
-	INSERT INTO gasto.Administracion(id_expensa, id_factura, descripcion)
-		VALUES (@id_expensa, @id_factura, @descripcion)
+	DECLARE @nro_factura INT
+	DECLARE @fecha_factura DATE = DATEADD(DAY, -8, @fecha_expensa) -- Como no hay fecha de gastos, lo ponemos en algun momento durante el mes
+	DECLARE @id_proveedor INT = (SELECT id_proveedor FROM adm.Proveedor where id_consorcio = @id_consorcio AND motivo = 'GASTOS DE ADMINISTRACION')
+	EXEC fin.AgregarFactura 
+		@id_proveedor, 
+		@fecha_factura,
+		@importe,
+		@nro_factura OUTPUT
+
+	INSERT INTO gasto.Administracion(id_expensa, nro_factura, descripcion)
+		VALUES (@id_expensa, @nro_factura, @descripcion)
 END
 GO
 
 CREATE OR ALTER PROCEDURE gasto.AgregarGastoBancario
+	@id_consorcio INT,
 	@id_expensa INT,
-	@id_factura INT,
+	@importe DECIMAL(18,2),
+	@fecha_expensa DATE,
 	@descripcion VARCHAR(100)
 AS
 BEGIN
-	INSERT INTO gasto.Bancario(id_expensa, id_factura, descripcion)
-		VALUES (@id_expensa, @id_factura, @descripcion)
+	
+	DECLARE @nro_factura INT
+	DECLARE @fecha_factura DATE = DATEADD(DAY, -8, @fecha_expensa) -- Como no hay fecha de gastos, lo ponemos en algun momento durante el mes
+	DECLARE @id_proveedor INT = (SELECT id_proveedor FROM adm.Proveedor where id_consorcio = @id_consorcio AND motivo = 'GASTOS BANCARIOS')
+	EXEC fin.AgregarFactura 
+		@id_proveedor, 
+		@fecha_factura,
+		@importe,
+		@nro_factura OUTPUT
+	
+
+	INSERT INTO gasto.Bancario(id_expensa, nro_factura, descripcion)
+		VALUES (@id_expensa, @nro_factura, @descripcion)
 END
 GO
 
+-- TODO: Revisar este SP
 CREATE OR ALTER PROCEDURE gasto.AgregarGastoExtraordinario
 	@id_expensa INT,
-	@id_factura INT,
+	@nro_factura INT,
 	@descripcion VARCHAR(100),
 	@nro_cuota TINYINT,
 	@total_cuotas TINYINT
 AS
 BEGIN
-	INSERT INTO gasto.Extraordinario(id_expensa, id_factura, descripcion, nro_cuota, total_cuotas)
-		VALUES (@id_expensa, @id_factura, @descripcion, @nro_cuota, @total_cuotas)
+	INSERT INTO gasto.Extraordinario(id_expensa, nro_factura, descripcion, nro_cuota, total_cuotas)
+		VALUES (@id_expensa, @nro_factura, @descripcion, @nro_cuota, @total_cuotas)
 END
 GO
 
+-- TODO Revisar este SP tambien. Siempre va a tener proveedor NULL cuando importamos los gastos. El json viene sin gastos generales.
 CREATE OR ALTER PROCEDURE gasto.AgregarGastoGeneral
+	@id_consorcio INT,
 	@id_expensa INT,
-	@id_factura INT,
+	@importe DECIMAL(18,2),
+	@fecha_expensa DATE,
 	@descripcion VARCHAR(100)
 AS
 BEGIN
-	INSERT INTO gasto.General(id_expensa, id_factura, descripcion)
-		VALUES (@id_expensa, @id_factura, @descripcion)
+	
+	DECLARE @nro_factura INT
+	DECLARE @fecha_factura DATE = DATEADD(DAY, -8, @fecha_expensa) -- Como no hay fecha de gastos, lo ponemos en algun momento durante el mes
+	DECLARE @id_proveedor INT = (SELECT id_proveedor FROM adm.Proveedor where id_consorcio = @id_consorcio AND motivo = 'GASTOS GENERAL')
+	EXEC fin.AgregarFactura 
+		@id_proveedor, 
+		@fecha_factura,
+		@importe,
+		@nro_factura OUTPUT
+
+	INSERT INTO gasto.General(id_expensa, nro_factura, descripcion)
+		VALUES (@id_expensa, @nro_factura, @descripcion)
 END
 GO
 
 CREATE OR ALTER PROCEDURE gasto.AgregarGastoLimpieza
+	@id_consorcio INT,
 	@id_expensa INT,
-	@id_factura INT,
+	@importe DECIMAL(18,2),
+	@fecha_expensa DATE,
 	@descripcion VARCHAR(100)
 AS
 BEGIN
-	INSERT INTO gasto.Limpieza(id_expensa, id_factura, descripcion)
-		VALUES (@id_expensa, @id_factura, @descripcion)
+	DECLARE @nro_factura INT
+	DECLARE @fecha_factura DATE = DATEADD(DAY, -8, @fecha_expensa) -- Como no hay fecha de gastos, lo ponemos en algun momento durante el mes
+	DECLARE @id_proveedor INT = (SELECT id_proveedor FROM adm.Proveedor where id_consorcio = @id_consorcio AND motivo = 'GASTOS DE LIMPIEZA')
+	EXEC fin.AgregarFactura 
+		@id_proveedor, 
+		@fecha_factura,
+		@importe,
+		@nro_factura OUTPUT
+
+	INSERT INTO gasto.Limpieza(id_expensa, nro_factura, descripcion)
+		VALUES (@id_expensa, @nro_factura, @descripcion)
 END
 GO
 
 CREATE OR ALTER PROCEDURE gasto.AgregarGastoSeguro
+	@id_consorcio INT,
 	@id_expensa INT,
-	@id_factura INT,
+	@importe DECIMAL(18,2),
+	@fecha_expensa DATE,
 	@descripcion VARCHAR(100)
 AS
 BEGIN
-	INSERT INTO gasto.Seguro(id_expensa, id_factura, descripcion)
-		VALUES (@id_expensa, @id_factura, @descripcion)
+	DECLARE @nro_factura INT
+	DECLARE @fecha_factura DATE = DATEADD(DAY, -8, @fecha_expensa) -- Como no hay fecha de gastos, lo ponemos en algun momento durante el mes
+	DECLARE @id_proveedor INT = (SELECT id_proveedor FROM adm.Proveedor where id_consorcio = @id_consorcio AND motivo = 'SEGUROS')
+	EXEC fin.AgregarFactura 
+		@id_proveedor, 
+		@fecha_factura,
+		@importe,
+		@nro_factura OUTPUT
+	
+	INSERT INTO gasto.Seguro(id_expensa, nro_factura, descripcion)
+		VALUES (@id_expensa, @nro_factura, @descripcion)
 END
 GO
 
 CREATE OR ALTER PROCEDURE gasto.AgregarGastoServicioPublico
+	@id_consorcio INT,
 	@id_expensa INT,
-	@id_factura INT,
-	@id_tipo_serv_publico INT,
+	@importe DECIMAL(18,2),
+	@fecha_expensa DATE,
 	@descripcion VARCHAR(100)
 AS
 BEGIN
-	INSERT INTO gasto.ServicioPublico(id_expensa, id_factura, descripcion)
-		VALUES (@id_expensa, @id_factura, @descripcion)
+	DECLARE @nro_factura INT
+	DECLARE @fecha_factura DATE = DATEADD(DAY, -8, @fecha_expensa) -- Como no hay fecha de gastos, lo ponemos en algun momento durante el mes
+	DECLARE @id_proveedor INT = (SELECT 1 id_proveedor FROM adm.Proveedor where id_consorcio = @id_consorcio AND motivo = 'SERVICIOS PUBLICOS' AND razon_social LIKE @descripcion)
+	EXEC fin.AgregarFactura 
+		@id_proveedor, 
+		@fecha_factura,
+		@importe,
+		@nro_factura OUTPUT
+	
+	INSERT INTO gasto.ServicioPublico(id_expensa, nro_factura, descripcion)
+		VALUES (@id_expensa, @nro_factura, @descripcion)
 END
 GO
 
 -------------- FIN --------------
-
-CREATE OR ALTER PROCEDURE fin.AgregarFactura
-	@id_proveedor INT,
-	@nro_factura VARCHAR(15),
-	@fecha_emision DATE,
-	@importe DECIMAL(10,2)
-AS
-BEGIN
-	INSERT INTO fin.Factura(id_proveedor, nro_Factura, fecha_Emision, importe) 
-		values(@id_proveedor, @nro_factura, @fecha_emision, @importe)
-END
-GO
 
 CREATE OR ALTER PROCEDURE fin.AgregarPago
 	@id_resumen INT,
@@ -376,43 +434,27 @@ GO
 -- Generar Estado de Cuenta
 
 CREATE OR ALTER PROCEDURE adm.AgregarExpensa
-	@id_consorcio INT, @fechaGenerado DATE, 
-	@fechaPrimerVenc DATE, @fechaSegVenc DATE
+	@id_consorcio INT, 
+	@mes VARCHAR(20),
+	@id_expensa INT OUTPUT
+
 AS
 BEGIN
 	BEGIN TRY
-		IF NOT EXISTS(SELECT TOP 1 * FROM adm.Expensa WHERE id_consorcio=@id_consorcio)
+		
+		IF NOT EXISTS(SELECT TOP 1 * FROM adm.Consorcio WHERE id_consorcio=@id_consorcio)
 		BEGIN
 			RAISERROR('No existe consorcio con ese id.',16,1)
 			RETURN
 		END
-
-		IF NOT EXISTS(SELECT TOP 1 * FROM adm.Expensa WHERE id_consorcio=@id_consorcio AND fechaGenerado=@fechaGenerado)
-		BEGIN
-			RAISERROR('Ya existe una expensa generada para ese consorcio en esa fecha.',16,1)
-			RETURN
-		END
-		--VALIDACION DE FECHAS
-		IF @fechaGenerado>=@fechaPrimerVenc
-		BEGIN
-			RAISERROR('La fecha de generación no puede ser posterior al primer vencimiento.',16,1)
-			RETURN
-		END
-		
-		IF @fechaPrimerVenc>=@fechaSegVenc
-		BEGIN
-			RAISERROR('La fecha de segundo vencimiento no puede ser posterior al primer vencimiento.',16,1)
-			RETURN
-		END
-
-		IF @fechaGenerado>GETDATE()
-		BEGIN
-			RAISERROR('La fecha de generación no puede ser posterior a la actual.',16,1)
-			RETURN
-		END
+		DECLARE @fecha_expensa DATE = adm.ObtenerPrimerDiaDelMes(@mes) -- Expensa al dia siguiente al ultimo dia del mes que acaba de terminar. Si la expensa es de Agosto, entonces la fecha de la expensa es al 01/9.
+		DECLARE @primer_vencimiento DATE = DATEADD(DAY, 4, @fecha_expensa) -- Primer vencimiento al 5
+		DECLARE @segundo_vencimiento DATE = DATEADD(DAY, 10, @fecha_expensa) -- Primer vencimiento al 15
 
 		INSERT INTO adm.Expensa(id_consorcio,fechaGenerado,fechaPrimerVenc,fechaSegVenc)
-			VALUES (@id_consorcio,@fechaGenerado,@fechaPrimerVenc,@fechaSegVenc)
+			VALUES (@id_consorcio, @fecha_expensa, @primer_vencimiento, @segundo_vencimiento)
+		SET @id_expensa = SCOPE_IDENTITY();
+
 	END TRY
 	BEGIN CATCH
 		PRINT('Error al agregar la expensa: ' + ERROR_MESSAGE())
@@ -422,39 +464,16 @@ GO
 --------------------------ESQUEMA FINANZAS--------------------------
 CREATE OR ALTER PROCEDURE fin.AgregarFactura
     @id_proveedor INT,
-    @nro_factura VARCHAR(15),
-    @fecha_emision DATE,
-    @fecha_venc DATE,
-    @importe DECIMAL(10,2)
+	@fecha_emision DATE,
+	@importe DECIMAL(18,2),
+	@nro_factura INT OUTPUT
 AS
 BEGIN
 	BEGIN TRY
-		IF NOT EXISTS(SELECT 1 FROM adm.Proveedor WHERE id_proveedor=@id_proveedor)
-		BEGIN
-			RAISERROR('No existe proveedor con ese id.',16,1)
-			RETURN
-		END
 
-		IF EXISTS(SELECT 1 FROM fin.Factura WHERE nro_factura=@nro_factura)
-		BEGIN
-			RAISERROR('Ya existe una factura con ese numero.',16,1)
-			RETURN
-		END
-
-        IF @fecha_emision > @fecha_venc
-        BEGIN
-            RAISERROR('La fecha de emisión no puede ser posterior al vencimiento.', 16, 1)
-            RETURN
-        END
-
-        IF @fecha_emision > GETDATE()
-        BEGIN
-            RAISERROR('La fecha de emisión no puede ser posterior a la actual.', 16, 1)
-            RETURN
-        END
-
-		INSERT INTO fin.Factura (id_proveedor, nro_factura, fecha_emision, importe)
-			VALUES (@id_proveedor, @nro_factura, @fecha_emision, @importe)
+		INSERT INTO fin.Factura (id_proveedor, fecha_emision, importe)
+			VALUES (@id_proveedor, @fecha_emision, @importe)
+		SET @nro_factura = SCOPE_IDENTITY()
 	END TRY
 	BEGIN CATCH
 		PRINT('Error al agregar la factura: ' + ERROR_MESSAGE())

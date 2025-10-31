@@ -432,6 +432,7 @@ CREATE OR ALTER PROCEDURE adm.ImportarGastos -- TODO: Habria que poner una verif
     @ruta_archivo NVARCHAR(255)
 AS
 BEGIN
+    SET NOCOUNT ON;
 
     CREATE TABLE #GastosTemp (
         Nombre_del_consorcio NVARCHAR(100),
@@ -473,38 +474,63 @@ BEGIN
     DECLARE @id INT = 1, @max INT;
     SELECT @max = COUNT(*) FROM #GastosTemp;
        
+    BEGIN TRANSACTION
+    BEGIN TRY
+        WHILE @id <= @max
+        BEGIN
+            DECLARE @nombre_consorcio NVARCHAR(100),
+                @mes VARCHAR(20),
+                @bancarios DECIMAL(18,2),
+                @limpieza DECIMAL(18,2),
+                @administracion DECIMAL(18,2),
+                @seguros DECIMAL(18,2),
+                @gastos_generales DECIMAL(18,2),
+                @servicios_publicos_agua DECIMAL(18,2),
+                @servicios_publicos_luz DECIMAL(18,2)
+            DECLARE @id_consorcio INT
+            DECLARE @id_expensa INT
+            DECLARE @fecha_expensa DATE
 
-    WHILE @id <= @max
-    BEGIN
-        DECLARE @nombre_consorcio NVARCHAR(100),
-            @mes VARCHAR(20),
-            @bancarios DECIMAL(18,2),
-            @limpieza DECIMAL(18,2),
-            @administracion DECIMAL(18,2),
-            @seguros DECIMAL(18,2),
-            @gastos_generales DECIMAL(18,2),
-            @servicios_publicos_agua DECIMAL(18,2),
-            @servicios_publicos_luz DECIMAL(18,2)
-
-
-        SELECT TOP 1
-            @nombre_consorcio = Nombre_del_consorcio,
-            @mes = Mes,
-            @bancarios = BANCARIOS,
-            @limpieza = LIMPIEZA,
-            @administracion = ADMINISTRACION,
-            @seguros = SEGUROS,
-            @gastos_generales = GASTOS_GENERALES,
-            @servicios_publicos_agua = SERVICIOS_PUBLICOS_Agua,
-            @servicios_publicos_luz = SERVICIOS_PUBLICOS_Luz
+            SELECT TOP 1
+                @nombre_consorcio = Nombre_del_consorcio,
+                @mes = Mes,
+                @bancarios = BANCARIOS,
+                @limpieza = LIMPIEZA,
+                @administracion = ADMINISTRACION,
+                @seguros = SEGUROS,
+                @gastos_generales = GASTOS_GENERALES,
+                @servicios_publicos_agua = SERVICIOS_PUBLICOS_Agua,
+                @servicios_publicos_luz = SERVICIOS_PUBLICOS_Luz
 
             FROM #GastosTemp
 
-        -- TODO: Iterar sobre los gastosSP
-        
-        DELETE TOP (1) FROM #GastosTemp;
-        SET @id += 1;
-    END
+            IF(@nombre_consorcio IS NOT NULL)
+            BEGIN
+                SET @id_consorcio = (SELECT id_consorcio FROM adm.Consorcio WHERE nombre = @nombre_consorcio)
+                exec adm.AgregarExpensa @id_consorcio, @mes, @id_expensa OUTPUT
+
+                SET @fecha_expensa = (SELECT fechaGenerado FROM adm.Expensa where id_expensa = @id_expensa)
+
+                exec gasto.AgregarGastoAdministracion @id_consorcio, @id_expensa, @administracion, @fecha_expensa, NULL
+                exec gasto.AgregarGastoBancario @id_consorcio, @id_expensa, @bancarios, @fecha_expensa, NULL
+                exec gasto.AgregarGastoGeneral @id_consorcio, @id_expensa, @gastos_generales, @fecha_expensa, NULL
+                exec gasto.AgregarGastoLimpieza @id_consorcio, @id_expensa, @limpieza, @fecha_expensa, NULL
+                exec gasto.AgregarGastoSeguro @id_consorcio, @id_expensa, @seguros, @fecha_expensa, NULL
+                exec gasto.AgregarGastoServicioPublico @id_consorcio, @id_expensa, @servicios_publicos_agua, @fecha_expensa, 'AYSA'
+                exec gasto.AgregarGastoServicioPublico @id_consorcio, @id_expensa, @servicios_publicos_luz, @fecha_expensa, 'EDENOR'
+            END
+            DELETE TOP (1) FROM #GastosTemp;
+            SET @id += 1;
+            
+        END
+        COMMIT
+
+    END TRY
+    BEGIN CATCH
+        ROLLBACK
+		PRINT 'Ocurrio un error al generar la expensa.';
+		PRINT 'Mensaje: ' + ERROR_MESSAGE();
+	END CATCH
 END
 /*
 Para probar
@@ -514,9 +540,7 @@ exec adm.ImportarConsorcios N'C:\Temp\datos varios.xlsx'
 exec adm.ImportarProveedores N'C:\Temp\datos varios.xlsx'
 exec adm.ImportarInquilinoYPropietarios N'C:\Temp\Inquilino-propietarios-datos.csv'
 exec adm.ImportarRelacionEntreUFyPropInq N'C:\Temp\Inquilino-propietarios-UF.csv'
-select * from adm.UnidadFuncional
 
 exec adm.ImportarGastos N'C:\Temp\Servicios.Servicios.json'
-
 
 */

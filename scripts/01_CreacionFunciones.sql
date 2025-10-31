@@ -106,3 +106,39 @@ BEGIN
     RETURN CAST(@numero_formateado AS DECIMAL(18,2))
 END
 GO
+
+CREATE OR ALTER FUNCTION adm.ObtenerPrimerDiaDelMes
+(
+    @nombreMes NVARCHAR(20)
+)
+RETURNS DATE
+AS
+BEGIN
+    DECLARE @anioActual INT = YEAR(GETDATE());
+    DECLARE @mes INT;
+
+    SET @nombreMes = LTRIM(RTRIM(LOWER(@nombreMes)));
+
+    -- Convertimos el nombre del mes a número
+    SET @mes = CASE @nombreMes
+        WHEN 'enero' THEN 1
+        WHEN 'febrero' THEN 2
+        WHEN 'marzo' THEN 3
+        WHEN 'abril' THEN 4
+        WHEN 'mayo' THEN 5
+        WHEN 'junio' THEN 6
+        WHEN 'julio' THEN 7
+        WHEN 'agosto' THEN 8
+        WHEN 'septiembre' THEN 9
+        WHEN 'octubre' THEN 10
+        WHEN 'noviembre' THEN 11
+        WHEN 'diciembre' THEN 12
+        ELSE NULL
+    END;
+
+    IF @mes IS NULL
+        RETURN NULL;
+
+    RETURN DATEFROMPARTS(@anioActual, @mes, 1);
+END;
+GO
