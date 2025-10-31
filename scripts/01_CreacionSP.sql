@@ -447,9 +447,9 @@ BEGIN
 			RAISERROR('No existe consorcio con ese id.',16,1)
 			RETURN
 		END
-		DECLARE @fecha_expensa DATE = adm.ObtenerPrimerDiaDelMes(@mes) -- Expensa al dia siguiente al ultimo dia del mes que acaba de terminar. Si la expensa es de Agosto, entonces la fecha de la expensa es al 01/9.
-		DECLARE @primer_vencimiento DATE = DATEADD(DAY, 4, @fecha_expensa) -- Primer vencimiento al 5
-		DECLARE @segundo_vencimiento DATE = DATEADD(DAY, 10, @fecha_expensa) -- Primer vencimiento al 15
+		DECLARE @fecha_expensa DATE = DATEADD(DAY, -1, adm.ObtenerPrimerDiaDelMes(@mes)) -- Expensa al dia siguiente al ultimo dia del mes que acaba de terminar. Si la expensa es de Agosto, entonces la fecha de la expensa es al 01/9.
+		DECLARE @primer_vencimiento DATE = DATEADD(DAY, 5, @fecha_expensa) -- Primer vencimiento al 5
+		DECLARE @segundo_vencimiento DATE = DATEADD(DAY, 5, @primer_vencimiento) -- Primer vencimiento al 10
 
 		INSERT INTO adm.Expensa(id_consorcio,fechaGenerado,fechaPrimerVenc,fechaSegVenc)
 			VALUES (@id_consorcio, @fecha_expensa, @primer_vencimiento, @segundo_vencimiento)

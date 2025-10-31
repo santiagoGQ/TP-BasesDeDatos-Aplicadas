@@ -532,6 +532,17 @@ BEGIN
 		PRINT 'Mensaje: ' + ERROR_MESSAGE();
 	END CATCH
 END
+GO
+
+CREATE OR ALTER PROCEDURE fin.GenerarExpensa
+    @anio VARCHAR(10),
+    @mes VARCHAR(15),
+    @nombre_consorcio VARCHAR(30)
+AS
+BEGIN
+    DECLARE @id_consorcio INT = (SELECT id_consorcio FROM adm.Consorcio where nombre = @nombre_consorcio)
+
+END
 /*
 Para probar
 
@@ -540,7 +551,6 @@ exec adm.ImportarConsorcios N'C:\Temp\datos varios.xlsx'
 exec adm.ImportarProveedores N'C:\Temp\datos varios.xlsx'
 exec adm.ImportarInquilinoYPropietarios N'C:\Temp\Inquilino-propietarios-datos.csv'
 exec adm.ImportarRelacionEntreUFyPropInq N'C:\Temp\Inquilino-propietarios-UF.csv'
-
 exec adm.ImportarGastos N'C:\Temp\Servicios.Servicios.json'
 
 */
