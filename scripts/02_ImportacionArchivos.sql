@@ -159,10 +159,10 @@ BEGIN
         @id_consorcio,
         piso,
         departamento,
-        CAST(REPLACE(coeficiente, ',', '.') AS DECIMAL(5,2)),
-        CAST(m2_unidad_funcional AS DECIMAL(8,2)),
-        CAST(m2_baulera AS DECIMAL(8,2)),
-        CAST(m2_cochera AS DECIMAL(8,2))
+        CAST(REPLACE(coeficiente, ',', '.') AS DECIMAL(3,2)),
+        CAST(m2_unidad_funcional AS DECIMAL(10,2)),
+        CAST(m2_baulera AS DECIMAL(10,2)),
+        CAST(m2_cochera AS DECIMAL(10,2))
     FROM #UFsTemp
     WHERE nombreConsorcio = @nombre;
 
@@ -404,6 +404,7 @@ BEGIN
         SET @id += 1;
     END
 
+    DROP TABLE #RelacionesTemp
 END
 GO
 
@@ -437,13 +438,13 @@ BEGIN
     CREATE TABLE #GastosTemp (
         Nombre_del_consorcio NVARCHAR(100),
         Mes VARCHAR(20),
-        BANCARIOS DECIMAL(18,2),
-        LIMPIEZA DECIMAL(18,2),
-        ADMINISTRACION DECIMAL(18,2),
-        SEGUROS DECIMAL(18,2),
-        GASTOS_GENERALES DECIMAL(18,2),
-        SERVICIOS_PUBLICOS_Agua DECIMAL(18,2),
-        SERVICIOS_PUBLICOS_Luz DECIMAL(18,2)
+        BANCARIOS DECIMAL(10,2),
+        LIMPIEZA DECIMAL(10,2),
+        ADMINISTRACION DECIMAL(10,2),
+        SEGUROS DECIMAL(10,2),
+        GASTOS_GENERALES DECIMAL(10,2),
+        SERVICIOS_PUBLICOS_Agua DECIMAL(10,2),
+        SERVICIOS_PUBLICOS_Luz DECIMAL(10,2)
     );
 
     DECLARE @json NVARCHAR(MAX);
@@ -480,13 +481,13 @@ BEGIN
         BEGIN
             DECLARE @nombre_consorcio NVARCHAR(100),
                 @mes VARCHAR(20),
-                @bancarios DECIMAL(18,2),
-                @limpieza DECIMAL(18,2),
-                @administracion DECIMAL(18,2),
-                @seguros DECIMAL(18,2),
-                @gastos_generales DECIMAL(18,2),
-                @servicios_publicos_agua DECIMAL(18,2),
-                @servicios_publicos_luz DECIMAL(18,2)
+                @bancarios DECIMAL(10,2),
+                @limpieza DECIMAL(10,2),
+                @administracion DECIMAL(10,2),
+                @seguros DECIMAL(10,2),
+                @gastos_generales DECIMAL(10,2),
+                @servicios_publicos_agua DECIMAL(10,2),
+                @servicios_publicos_luz DECIMAL(10,2)
             DECLARE @id_consorcio INT
             DECLARE @id_expensa INT
             DECLARE @fecha_expensa DATE
@@ -531,8 +532,68 @@ BEGIN
 		PRINT 'Ocurrio un error al generar la expensa.';
 		PRINT 'Mensaje: ' + ERROR_MESSAGE();
 	END CATCH
+    DROP TABLE #GastosTemp
 END
 GO
+
+CREATE OR ALTER PROCEDURE fin.ImportarPagos -- TODO: Tecnicamente cada import agrega toda la info. No busca duplicados, creo que no habria duplicados de este archivo.... no sé.
+    @ruta_archivo NVARCHAR(255)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    CREATE TABLE #PagosTemp (
+        id_pago NVARCHAR(10),
+        fecha NVARCHAR(50),
+        cbu_cvu NVARCHAR(50),
+        valor NVARCHAR(15)
+    );
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'
+        BULK INSERT #PagosTemp
+        FROM ''' + @ruta_archivo + N'''
+        WITH (
+            FIRSTROW = 2,
+            FIELDTERMINATOR = '','',
+            ROWTERMINATOR = ''\n'',
+            CODEPAGE = ''1252''
+        );
+    ';
+    EXEC sp_executesql @sql;
+
+
+    DECLARE @id INT = 1, @max INT;
+    SELECT @max = COUNT(*) FROM #PagosTemp;
+    WHILE @id <= @max
+    BEGIN
+        DECLARE @fecha_cruda NVARCHAR(50),
+                @cbu_cvu NVARCHAR(50),
+                @valor NVARCHAR(15)
+        DECLARE @fecha DATE
+        DECLARE @id_unidad INT
+        DECLARE @importe DECIMAL(10,2)
+
+        SELECT TOP 1
+            @cbu_cvu = cbu_cvu,
+            @fecha_cruda = fecha,
+            @valor = valor
+        FROM #PagosTemp
+
+        SET @fecha = CONVERT(DATE, @fecha_cruda, 103);
+        SET @id_unidad = (SELECT id_uni_func FROM adm.UnidadFuncional where cbu = @cbu_cvu)
+        SET @importe = fin.FormatearPago(@valor)
+
+        EXEC fin.AgregarPago @id_unidad, @fecha, @cbu_cvu, @importe
+        
+        DELETE TOP (1) FROM #PagosTemp;
+        SET @id += 1;
+    END
+    DROP TABLE #PagosTemp
+END
+GO
+
+
 
 CREATE OR ALTER PROCEDURE fin.GenerarExpensa
     @anio VARCHAR(10),
@@ -540,8 +601,111 @@ CREATE OR ALTER PROCEDURE fin.GenerarExpensa
     @nombre_consorcio VARCHAR(30)
 AS
 BEGIN
-    DECLARE @id_consorcio INT = (SELECT id_consorcio FROM adm.Consorcio where nombre = @nombre_consorcio)
+    SET NOCOUNT ON;
 
+
+    DECLARE @id_consorcio INT = (SELECT id_consorcio FROM adm.Consorcio where nombre = @nombre_consorcio) 
+    DECLARE @id_expensa INT, 
+            @fecha_primer_vencimiento DATE, 
+            @fecha_segundo_vencimiento DATE,
+            @total_gastos_ordinarios DECIMAL(10,2), 
+            @total_gastado DECIMAL(10,2)
+
+        SELECT 
+            @id_expensa = id_expensa, 
+            @id_consorcio = id_consorcio, 
+            @fecha_primer_vencimiento = fecha_primer_vencimiento,
+            @fecha_segundo_vencimiento = fecha_segundo_vencimiento, 
+            @total_gastos_ordinarios = total_gastos_ordinarios,
+            @total_gastado = total_gastado
+        FROM fin.Vista_GastosPorExpensa
+        WHERE id_consorcio = @id_consorcio AND mes = @mes AND anio = @anio
+
+    CREATE TABLE #UFxConsorcio (
+        precio_bauleraM2 DECIMAL(10,2), 
+        precio_cocheraM2 DECIMAL(10,2),
+        nro_uf INT,
+        id_uni_func INT,
+        id_inq INT,
+        id_prop INT,
+        piso VARCHAR(4),
+        depto VARCHAR(4),
+        coeficiente DECIMAL(3,2),
+        cbu CHAR(22),
+        baulera_m2 TINYINT,
+        cochera_m2 TINYINT
+    )
+    INSERT INTO #UFxConsorcio (precio_bauleraM2, precio_cocheraM2, nro_uf, id_uni_func, id_inq, id_prop, piso, depto, coeficiente, cbu,
+      baulera_m2, cochera_m2)
+      
+        SELECT precio_bauleraM2, precio_cocheraM2, nro_uf, id_uni_func, id_inq, id_prop, piso, depto, coeficiente, cbu,
+            baulera_m2, cochera_m2
+        FROM fin.Vista_UfYConsorcio
+        WHERE id_consorcio = @id_consorcio
+    
+    DECLARE @i INT = 1;
+    DECLARE @total INT = (SELECT COUNT(*) FROM #UFxConsorcio);    
+    
+    BEGIN TRANSACTION
+    BEGIN TRY
+        WHILE @i <= @total
+        BEGIN
+
+            DECLARE @id_uni_func INT,
+                    @id_inq INT,
+                    @id_prop INT,
+                    @coeficiente DECIMAL(3,2),
+                    @piso VARCHAR(4),
+                    @depto VARCHAR(4),
+                    @gasto_baulera DECIMAL(10,2),
+                    @gasto_cochera DECIMAL(10,2),
+                    @apellido_y_nombre VARCHAR(50)
+        
+            SELECT
+                @id_uni_func = id_uni_func,
+                @id_inq = id_inq,
+                @id_prop = id_prop,
+                @coeficiente  = coeficiente,
+                @piso = piso,
+                @depto = depto,
+                @gasto_baulera = precio_bauleraM2 * baulera_m2,
+                @gasto_cochera = precio_cocheraM2 * cochera_m2
+            
+            FROM #UFxConsorcio
+            WHERE nro_uf = @i;
+
+            IF @id_prop IS NULL
+                SET @apellido_y_nombre = 
+                    (SELECT nombre from adm.Inquilino where id_inq = @id_inq) + ', ' +
+                    (SELECT apellido from adm.Inquilino where id_inq = @id_inq)
+            ELSE
+                SET @apellido_y_nombre = 
+                    (SELECT nombre from adm.Propietario where id_prop = @id_prop) + ', ' +
+                    (SELECT apellido from adm.Propietario where id_prop = @id_prop)
+            EXEC fin.AgregarEstadoDeCuenta 
+                    @id_expensa,
+                    @id_consorcio,
+                    @id_uni_func, 
+                    @coeficiente, 
+                    @piso, 
+                    @depto,
+                    @gasto_cochera,
+                    @gasto_baulera,
+                    @apellido_y_nombre,
+                    @anio,
+                    @mes,
+                    @total_gastos_ordinarios,
+                    @total_gastado
+
+            SET @i += 1;
+        END
+        COMMIT
+    END TRY
+    BEGIN CATCH
+        ROLLBACK
+		PRINT 'Ocurrio un error al generar los estados de cuenta.';
+		PRINT 'Mensaje: ' + ERROR_MESSAGE();
+	END CATCH
 END
 /*
 Para probar
@@ -552,5 +716,12 @@ exec adm.ImportarProveedores N'C:\Temp\datos varios.xlsx'
 exec adm.ImportarInquilinoYPropietarios N'C:\Temp\Inquilino-propietarios-datos.csv'
 exec adm.ImportarRelacionEntreUFyPropInq N'C:\Temp\Inquilino-propietarios-UF.csv'
 exec adm.ImportarGastos N'C:\Temp\Servicios.Servicios.json'
+exec fin.ImportarPagos N'C:\Temp\pagos_consorcios.csv'
+exec fin.GenerarExpensa '2025', '3', 'Azcuenaga'
+exec fin.GenerarExpensa '2025', '4', 'Azcuenaga'
+exec fin.GenerarExpensa '2025', '5', 'Azcuenaga'
+
+
+TRUNCATE TABLE fin.EstadoDeCuenta
 
 */

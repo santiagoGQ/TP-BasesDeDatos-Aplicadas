@@ -37,7 +37,7 @@ BEGIN
 	EXEC('CREATE SCHEMA adm');
 END
 
---Esquema fin (Finanzas) vinculado a tablas Pago, ResumenBancarioCSV, EstadoDeCuenta, Expensa, EstadoFinanciero, Factura.
+--Esquema fin (Finanzas) vinculado a tablas Pago, EstadoDeCuenta, Expensa, EstadoFinanciero, Factura.
 IF SCHEMA_ID('fin') IS NULL
 BEGIN
     EXEC('CREATE SCHEMA fin');
@@ -286,15 +286,6 @@ BEGIN
         CONSTRAINT FK_Factura_GastoBancario FOREIGN KEY (nro_factura) REFERENCES fin.Factura(nro_factura)
 );END
 
-IF OBJECT_ID('fin.ResumenBancarioCSV') IS NULL
-BEGIN
-    CREATE TABLE fin.ResumenBancarioCSV(
-        id_expensa INT NOT NULL,
-        fechaCreado DATETIME
-
-        CONSTRAINT PK_ResumenCSV PRIMARY KEY (id_expensa),
-        CONSTRAINT FK_Expensa_ResumenCSV FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa)
-);END
 
 IF OBJECT_ID('adm.EnviadoA') IS NULL
 BEGIN
@@ -314,16 +305,14 @@ BEGIN
 IF OBJECT_ID('fin.Pago') IS NULL
 BEGIN
     CREATE TABLE fin.Pago(
-        id_resumen INT NOT NULL,
         id_pago INT IDENTITY(1,1) NOT NULL,
         id_uni_func INT,
         fecha DATETIME NOT NULL,
-        cuenta_origen CHAR(22) NOT NULL,
-        monto DECIMAL(7,2) NOT NULL,
+        cbu_cvu CHAR(22) NOT NULL,
+        monto DECIMAL(10,2) NOT NULL,
 
-        CONSTRAINT PK_Pago PRIMARY KEY (id_resumen, id_pago),
-        CONSTRAINT FK_Resumen_Pago FOREIGN KEY (id_resumen) REFERENCES fin.ResumenBancarioCSV(id_expensa),
-        CONSTRAINT FK_UniFunc_Pago FOREIGN KEY (id_uni_func) REFERENCES adm.UnidadFuncional(id_uni_func),
+        CONSTRAINT PK_Pago PRIMARY KEY (id_pago),
+        CONSTRAINT FK_UniFunc_Pago FOREIGN KEY (id_uni_func) REFERENCES adm.UnidadFuncional(id_uni_func)
 );END
 
 
@@ -331,11 +320,11 @@ IF OBJECT_ID('fin.EstadoFinanciero') IS NULL
 BEGIN
     CREATE TABLE fin.EstadoFinanciero(
         id_expensa INT NOT NULL,
-        ing_en_termino DECIMAL(7,2) NOT NULL,
-        ing_exp_adeudadas DECIMAL(7,2),
-        ing_adelantado DECIMAL(7,2) NOT NULL,
-        egresos DECIMAL(7,2) NOT NULL,
-        saldo_cierre DECIMAL(7,2) NOT NULL,
+        ing_en_termino DECIMAL(10,2) NOT NULL,
+        ing_exp_adeudadas DECIMAL(10,2),
+        ing_adelantado DECIMAL(10,2) NOT NULL,
+        egresos DECIMAL(10,2) NOT NULL,
+        saldo_cierre DECIMAL(10,2) NOT NULL,
 
         CONSTRAINT PK_EstadoFinanciero PRIMARY KEY (id_expensa),
         CONSTRAINT FK_Expensa_EstadoFinanciero FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
@@ -348,18 +337,19 @@ BEGIN
         id_expensa INT NOT NULL,
         id_est_de_cuenta INT IDENTITY(1,1) NOT NULL,
         id_uni_func INT NOT NULL,
-        prorateo DECIMAL(2,2) NOT NULL,
+        prorateo DECIMAL(3,2) NOT NULL,
+        piso VARCHAR(4) NOT NULL,
         depto VARCHAR(4) NOT NULL,
-        cochera DECIMAL(7,2),
-        baulera DECIMAL(7,2),
+        cochera DECIMAL(10,2),
+        baulera DECIMAL(10,2),
         nom_y_ap_propietario VARCHAR(50) NOT NULL,
-        saldo_ant_abonado DECIMAL(7,2),
-        pago_recibido DECIMAL(7,2),
-        deuda DECIMAL(7,2),
-        interes_mora DECIMAL(7,2),
-        expensas_ordinarias DECIMAL(7,2) NOT NULL,
-        expensas_extraordinarias DECIMAL(7,2),
-        total_a_pagar DECIMAL(7,2) NOT NULL,
+        saldo_anterior DECIMAL(10,2),
+        pago_recibido DECIMAL(10,2),
+        deuda DECIMAL(10,2),
+        interes_mora DECIMAL(10,2),
+        expensas_ordinarias DECIMAL(10,2) NOT NULL,
+        expensas_extraordinarias DECIMAL(10,2),
+        total_a_pagar DECIMAL(10,2) NOT NULL,
 
         CONSTRAINT PK_EstadoDeCuenta PRIMARY KEY (id_expensa, id_est_de_cuenta),
         CONSTRAINT FK_Expensa_EstadoDeCuenta FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),

@@ -267,7 +267,7 @@ GO
 CREATE OR ALTER PROCEDURE gasto.AgregarGastoAdministracion
 	@id_consorcio INT,
 	@id_expensa INT,
-	@importe DECIMAL(18,2),
+	@importe DECIMAL(10,2),
 	@fecha_expensa DATE,
 	@descripcion VARCHAR(100)
 AS
@@ -289,7 +289,7 @@ GO
 CREATE OR ALTER PROCEDURE gasto.AgregarGastoBancario
 	@id_consorcio INT,
 	@id_expensa INT,
-	@importe DECIMAL(18,2),
+	@importe DECIMAL(10,2),
 	@fecha_expensa DATE,
 	@descripcion VARCHAR(100)
 AS
@@ -328,7 +328,7 @@ GO
 CREATE OR ALTER PROCEDURE gasto.AgregarGastoGeneral
 	@id_consorcio INT,
 	@id_expensa INT,
-	@importe DECIMAL(18,2),
+	@importe DECIMAL(10,2),
 	@fecha_expensa DATE,
 	@descripcion VARCHAR(100)
 AS
@@ -351,7 +351,7 @@ GO
 CREATE OR ALTER PROCEDURE gasto.AgregarGastoLimpieza
 	@id_consorcio INT,
 	@id_expensa INT,
-	@importe DECIMAL(18,2),
+	@importe DECIMAL(10,2),
 	@fecha_expensa DATE,
 	@descripcion VARCHAR(100)
 AS
@@ -373,7 +373,7 @@ GO
 CREATE OR ALTER PROCEDURE gasto.AgregarGastoSeguro
 	@id_consorcio INT,
 	@id_expensa INT,
-	@importe DECIMAL(18,2),
+	@importe DECIMAL(10,2),
 	@fecha_expensa DATE,
 	@descripcion VARCHAR(100)
 AS
@@ -395,7 +395,7 @@ GO
 CREATE OR ALTER PROCEDURE gasto.AgregarGastoServicioPublico
 	@id_consorcio INT,
 	@id_expensa INT,
-	@importe DECIMAL(18,2),
+	@importe DECIMAL(10,2),
 	@fecha_expensa DATE,
 	@descripcion VARCHAR(100)
 AS
@@ -417,15 +417,14 @@ GO
 -------------- FIN --------------
 
 CREATE OR ALTER PROCEDURE fin.AgregarPago
-	@id_resumen INT,
 	@id_uni_func INT,
-	@fecha DATETIME,
+	@fecha DATE,
 	@cuenta_origen CHAR(22),
-	@monto DECIMAL(7,2)
+	@monto DECIMAL(10,2)
 AS
 BEGIN
-	INSERT INTO fin.Pago(id_resumen, id_uni_func, fecha, cuenta_origen, monto)
-		VALUES (@id_resumen, @id_uni_func, @fecha, @cuenta_origen, @monto)
+	INSERT INTO fin.Pago(id_uni_func, fecha, cbu_cvu, monto)
+		VALUES (@id_uni_func, @fecha, @cuenta_origen, @monto)
 END
 GO
 
@@ -465,7 +464,7 @@ GO
 CREATE OR ALTER PROCEDURE fin.AgregarFactura
     @id_proveedor INT,
 	@fecha_emision DATE,
-	@importe DECIMAL(18,2),
+	@importe DECIMAL(10,2),
 	@nro_factura INT OUTPUT
 AS
 BEGIN
@@ -481,47 +480,13 @@ BEGIN
 END
 GO
 
-CREATE OR ALTER PROCEDURE fin.AgregarPago
-    @id_resumen INT,@id_uni_func INT=NULL,
-	@fecha DATETIME,@cuenta_origen CHAR(22),@monto DECIMAL(7,2)
-AS
-BEGIN
-    BEGIN TRY
-        IF NOT EXISTS (SELECT 1 FROM fin.ResumenBancarioCSV WHERE id_expensa=@id_resumen)
-        BEGIN
-            RAISERROR('No existe resumen bancario con ese id.', 16, 1)
-            RETURN
-        END
-
-        IF @id_uni_func IS NOT NULL AND NOT EXISTS (SELECT 1 FROM adm.UnidadFuncional WHERE id_uni_func=@id_uni_func)
-        BEGIN
-            RAISERROR('No existe unidad funcional con ese id.', 16, 1)
-            RETURN
-        END
-
-        IF @fecha > GETDATE()
-        BEGIN
-            RAISERROR('La fecha del pago no puede ser posterior a la actual.', 16, 1)
-            RETURN
-        END
-
-        INSERT INTO fin.Pago (id_resumen, id_uni_func, fecha, cuenta_origen, monto)
-        VALUES (@id_resumen, @id_uni_func, @fecha, @cuenta_origen, @monto)
-
-    END TRY
-    BEGIN CATCH
-        PRINT('Error al registrar el pago: ' + ERROR_MESSAGE())
-    END CATCH
-END
-GO
-
 CREATE OR ALTER PROCEDURE fin.AgregarEstadoFinanciero
     @id_expensa INT,
-    @ing_en_termino DECIMAL(7,2),
-    @ing_exp_adeudadas DECIMAL(7,2),
-    @ing_adelantado DECIMAL(7,2),
-    @egresos DECIMAL(7,2),
-    @saldo_cierre DECIMAL(7,2)
+    @ing_en_termino DECIMAL(10,2),
+    @ing_exp_adeudadas DECIMAL(10,2),
+    @ing_adelantado DECIMAL(10,2),
+    @egresos DECIMAL(10,2),
+    @saldo_cierre DECIMAL(10,2)
 AS
 BEGIN
     BEGIN TRY
@@ -554,11 +519,9 @@ END
 GO
 
 CREATE OR ALTER PROCEDURE fin.AgregarEstadoDeCuenta
-    @id_expensa INT,@id_uni_func INT,@prorateo DECIMAL(4,2),@depto VARCHAR(4),
-    @cochera DECIMAL(7,2),@baulera DECIMAL(7,2),@nom_y_ap_propietario VARCHAR(50),
-    @saldo_ant_abonado DECIMAL(7,2),@pago_recibido DECIMAL(7,2),@deuda DECIMAL(7,2),
-    @interes_mora DECIMAL(7,2),@expensas_ordinarias DECIMAL(7,2),
-	@expensas_extraordinarias DECIMAL(7,2),@total_a_pagar DECIMAL(7,2)
+    @id_expensa INT, @id_consorcio INT, @id_uni_func INT, @prorateo DECIMAL(3,2), @piso VARCHAR(4), @depto VARCHAR(4),
+    @cochera DECIMAL(10,2),@baulera DECIMAL(10,2),@nom_y_ap_propietario VARCHAR(50),
+    @anio VARCHAR(10), @mes VARCHAR(15), @total_expensa_ordinarios DECIMAL(10,2), @total_expensa DECIMAL(10,2)
 AS
 BEGIN
     BEGIN TRY
@@ -574,20 +537,74 @@ BEGIN
             RETURN
         END
 
-        IF @total_a_pagar < 0
-        BEGIN
-            RAISERROR('El total a pagar no puede ser negativo.', 16, 1)
+		IF EXISTS (SELECT 1 FROM fin.EstadoDeCuenta WHERE id_expensa = @id_expensa AND id_uni_func = @id_uni_func)
+		BEGIN
+            RAISERROR('Ya existe un Estado de Cuenta para esta combinacion de Expensa y UF.', 16, 1)
             RETURN
         END
+		-- TODO: Si estoy en Enero esto rompe. 
+		DECLARE @id_expensa_anterior INT = (SELECT id_expensa from fin.Vista_GastosPorExpensa 
+												where id_consorcio = @id_consorcio AND mes = (@mes-1) AND anio = @anio)
+		-- Ayuda para multiplicar valores
+		DECLARE @multiplicador DECIMAL(3,2) = @prorateo / 100
+		DECLARE @fecha_expensa_generada DATE,
+				@fecha_primer_venc DATE,
+				@fecha_segundo_venc DATE,
+				@monto_pagado DECIMAL(10,2),
+				@fecha_ultimo_pago DATE,
+				@saldo_anterior DECIMAL(10,2),
+				@deuda DECIMAL(10,2),
+				@interes_mora DECIMAL(10,2)
+
+		IF @id_expensa_anterior IS NOT NULL
+		BEGIN
+			
+		-- Comenzamos pagos de la expensa anterior... 
+			SET @fecha_expensa_generada = (SELECT fechaGenerado from adm.Expensa where id_expensa= @id_expensa_anterior)
+			SET @fecha_primer_venc = (SELECT fechaPrimerVenc from adm.Expensa where id_expensa= @id_expensa_anterior)
+			SET @fecha_segundo_venc = (SELECT fechaSegVenc from adm.Expensa where id_expensa= @id_expensa_anterior)
+			SET @monto_pagado = (SELECT SUM(monto) from fin.Pago 
+									WHERE id_uni_func = @id_uni_func AND
+										fecha >= @fecha_expensa_generada AND fecha <= DATEADD(DAY, 1, @fecha_segundo_venc))
+			SET @fecha_ultimo_pago = (SELECT MAX(fecha) from fin.Pago 
+											WHERE id_uni_func = @id_uni_func AND
+												fecha >= @fecha_expensa_generada AND fecha <= DATEADD(DAY, 1, @fecha_segundo_venc))
+			SET @saldo_anterior = (SELECT total_a_pagar from fin.EstadoDeCuenta 
+										where id_expensa = @id_expensa_anterior AND id_uni_func = @id_uni_func)
+			SET @deuda = @saldo_anterior - @monto_pagado
+			IF (@fecha_ultimo_pago <= @fecha_primer_venc) AND @deuda <= 0
+				SET @interes_mora = 0
+			ELSE IF (@fecha_ultimo_pago > @fecha_primer_venc) AND (@fecha_ultimo_pago <= @fecha_segundo_venc)
+				SET @interes_mora = 0.02 * @saldo_anterior
+			ELSE
+				SET @interes_mora = 0.05 * @saldo_anterior
+		END
+		ELSE
+		BEGIN
+		-- Si es la primera expensa del edificio, el saldo anterior y etc es 0.
+			SET @saldo_anterior = 0
+			SET @monto_pagado = 0
+			SET @deuda = 0
+			SET @interes_mora = 0
+		END
+		PRINT(@multiplicador)
+		PRINT(@total_expensa_ordinarios)
+		DECLARE @TEST DECIMAL (10,2) = @total_expensa_ordinarios * @multiplicador
+		PRINT(@TEST)
+		-- Total extraordinarias es TotalDeTodos - ordinarias.
+		DECLARE @expensas_extraordinarias DECIMAL(10,2) = @total_expensa - @total_expensa_ordinarios
+		DECLARE @total_a_pagar DECIMAL (10,2)= (@total_expensa * @multiplicador) + @deuda + @interes_mora + @cochera + @baulera
 
         INSERT INTO fin.EstadoDeCuenta (
-            id_expensa, id_uni_func, prorateo, depto, cochera, baulera,
-            nom_y_ap_propietario, saldo_ant_abonado, pago_recibido, deuda,
+            id_expensa, id_uni_func, prorateo, piso, depto, cochera, baulera,
+            nom_y_ap_propietario, saldo_anterior, pago_recibido, deuda,
             interes_mora, expensas_ordinarias, expensas_extraordinarias, total_a_pagar)
         VALUES (
-            @id_expensa, @id_uni_func, @prorateo, @depto, @cochera, @baulera,
-            @nom_y_ap_propietario, @saldo_ant_abonado, @pago_recibido, @deuda,
-            @interes_mora, @expensas_ordinarias, @expensas_extraordinarias, @total_a_pagar)
+            @id_expensa, @id_uni_func, @prorateo, @piso, @depto, @cochera, @baulera,
+            @nom_y_ap_propietario, @saldo_anterior, @monto_pagado, @deuda, @interes_mora, 
+			@total_expensa_ordinarios * @multiplicador, 
+			@expensas_extraordinarias * @multiplicador, 
+			@total_a_pagar)
 
     END TRY
     BEGIN CATCH

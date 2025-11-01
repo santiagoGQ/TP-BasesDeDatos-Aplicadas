@@ -92,7 +92,7 @@ RETURN( SELECT
 GO
 
 CREATE OR ALTER FUNCTION fin.FormatearNumero (@numero NVARCHAR(50))
-    RETURNS DECIMAL(18,2)
+    RETURNS DECIMAL(10,2)
 AS
 BEGIN
     DECLARE @numero_formateado NVARCHAR(50) = REPLACE(@numero, '.', '')
@@ -103,7 +103,7 @@ BEGIN
                                 substring(@numero_formateado,len(@numero_formateado)-1,len(@numero_formateado)
                              )
     
-    RETURN CAST(@numero_formateado AS DECIMAL(18,2))
+    RETURN CAST(@numero_formateado AS DECIMAL(10,2))
 END
 GO
 
@@ -141,4 +141,17 @@ BEGIN
 
     RETURN DATEFROMPARTS(@anioActual, @mes, 1);
 END;
+GO
+
+CREATE OR ALTER FUNCTION fin.FormatearPago (@numero NVARCHAR(15))
+    RETURNS DECIMAL(10,2)
+AS
+BEGIN
+    DECLARE @numero_formateado NVARCHAR(15) = LTRIM(RTRIM(@numero))
+    SET @numero_formateado = REPLACE(@numero_formateado, '$', '')
+    SET @numero_formateado = REPLACE(@numero_formateado, '.', '')
+
+    RETURN CAST(@numero_formateado AS DECIMAL(10,2))
+
+END
 GO
