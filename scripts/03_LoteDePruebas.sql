@@ -181,8 +181,6 @@ BEGIN
 END;
 GO
 
-
---TODO: Revisar que funcione correctamente
 CREATE OR ALTER PROCEDURE test.GeneraExpensaProveedorGastos
     @id_consorcio INT,
     @mes VARCHAR(20)
@@ -234,7 +232,8 @@ BEGIN
                 'Empresa de servicios publicos', 'SERVICIOS PUBLICOS', @id_consorcio, '21314151000000000005', @id_servpublico OUTPUT;
 
         --Generación de fecha para las facturas
-        SET @fecha = DATEFROMPARTS ( 2025, CAST(LTRIM(RTRIM(@mes)) AS INT), 12)
+        DECLARE @mes_formateado INT = MONTH(adm.ObtenerPrimerDiaDelMes(@mes))
+        SET @fecha = DATEFROMPARTS ( 2025, CAST(LTRIM(RTRIM(@mes_formateado)) AS INT), 12)
 
         --Generación de gastos y facturas
         EXEC gasto.AgregarGastoAdministracion
@@ -268,3 +267,6 @@ BEGIN
     END CATCH
 END
 GO
+
+-- exec test.GeneraConsorcioPersonasUF 1, 1
+-- exec test.GeneraExpensaProveedorGastos 6, 'mayo'
