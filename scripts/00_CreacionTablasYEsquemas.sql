@@ -51,7 +51,12 @@ BEGIN
     EXEC('CREATE SCHEMA gasto');
 END
 GO
-
+--Esquema Gasto vinculado a SP que ejecutan pruebas.
+IF SCHEMA_ID('test') IS NULL
+BEGIN
+    EXEC('CREATE SCHEMA test');
+END
+GO
 ----------------CREACION DE TABLAS----------------
 IF OBJECT_ID('adm.TipoServicioLimpieza') IS NULL
 BEGIN
@@ -161,7 +166,7 @@ BEGIN
         total_m2 SMALLINT NOT NULL,
         piso VARCHAR(4) NOT NULL,
         depto VARCHAR(4) NOT NULL,
-        coeficiente DECIMAL(3,2) NOT NULL,
+        coeficiente DECIMAL(4,2) NOT NULL,
         cbu CHAR(22),
         baulera_m2 TINYINT NOT NULL,
         cochera_m2 TINYINT NOT NULL
@@ -172,7 +177,7 @@ BEGIN
         CONSTRAINT FK_Consorcio_UnidadFuncional FOREIGN KEY (id_consorcio) REFERENCES adm.Consorcio(id_consorcio),
         CONSTRAINT CK_UF_MayorCero CHECK (baulera_m2 >=0 AND cochera_m2 >=0),
         CONSTRAINT CK_UF_Superficie CHECK (baulera_m2+cochera_m2 <= total_m2),
-        CONSTRAINT CK_UF_cbu CHECK (LEN(cbu)=22 AND cbu NOT LIKE '%[^0-9]%'),
+        --CONSTRAINT CK_UF_cbu CHECK (LEN(cbu)=22 AND cbu NOT LIKE '%[^0-9]%'),
         CONSTRAINT UQ_UF_ConsorcioDepto UNIQUE (id_consorcio, piso, depto)
 
 ); END
@@ -337,7 +342,7 @@ BEGIN
         id_expensa INT NOT NULL,
         id_est_de_cuenta INT IDENTITY(1,1) NOT NULL,
         id_uni_func INT NOT NULL,
-        prorateo DECIMAL(3,2) NOT NULL,
+        prorateo DECIMAL(4,2) NOT NULL,
         piso VARCHAR(4) NOT NULL,
         depto VARCHAR(4) NOT NULL,
         cochera DECIMAL(10,2),

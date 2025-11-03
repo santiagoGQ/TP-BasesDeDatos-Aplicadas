@@ -14,7 +14,8 @@ GO
 --Genera un consorcio de prueba con parametros deseados
 --Generando a su vez prop e inq y asignandoles UF
 CREATE OR ALTER PROCEDURE test.GeneraConsorcioPersonasUF
-    @tieneBaulera BIT, @tieneCochera BIT
+    @tieneBaulera BIT, 
+    @tieneCochera BIT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -30,15 +31,17 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM adm.TipoServicioLimpieza)
         INSERT INTO adm.TipoServicioLimpieza(nombre) VALUES ('Empresa de limpieza');
 
-    -- Genera consorcio
+    ----------------------------------------------------------
+    -- 1. Crear consorcio base
+    ----------------------------------------------------------
     DECLARE
         @numeroConsorcio TINYINT,
         @nombre NVARCHAR(15),
         @calle NVARCHAR(22),
-        @metros_totales SMALLINT = 1000,
-        @cant_pisos TINYINT = 2,
-        @precio_baulera DECIMAL(10,2) = 60000.00,
-        @precio_cochera DECIMAL(10,2) = 60000.00,
+        @metros_totales SMALLINT = 720,
+        @cantidad_departamentos TINYINT = 12,
+        @precio_baulera DECIMAL(10,2) = 5000.00,
+        @precio_cochera DECIMAL(10,2) = 10000.00,
         @id_tipo_limpieza INT = 1,
         @id_consorcio INT;
 
@@ -46,15 +49,18 @@ BEGIN
         SET @numeroConsorcio = (SELECT ISNULL(MAX(id_consorcio),0) + 1 FROM adm.Consorcio);
         SET @nombre = 'Consorcio_' + CAST(@numeroConsorcio AS VARCHAR);
         SET @calle  = 'Calle ' + @nombre + ' 1816';
+        DECLARE @precio_baulera_final DECIMAL(10,2) =  @precio_baulera * @tieneBaulera
+
+        DECLARE @precio_cochera_final DECIMAL(10,2) =  @precio_cochera * @tieneCochera
 
         EXEC adm.AgregarConsorcio
-            @id_tipo_limpieza,
             @nombre,
             @calle,
             @metros_totales,
-            @cant_pisos,
-            @precio_baulera,
-            @precio_cochera;
+            @cantidad_departamentos,
+            @precio_baulera_final,
+            @precio_cochera_final,
+            @id_tipo_limpieza;
 
         SET @id_consorcio = IDENT_CURRENT('adm.Consorcio');
     END TRY
@@ -63,9 +69,10 @@ BEGIN
         RETURN;
     END CATCH;
 
-    -- Datos para personas y UF
-    DECLARE
-        @cantidadUF INT,
+    ----------------------------------------------------------
+    -- 2. Crear propietarios, inquilinos y unidades funcionales
+    ----------------------------------------------------------
+    DECLARE 
         @i INT = 1,
         @id_prop INT,
         @id_inq INT,
@@ -75,17 +82,45 @@ BEGIN
         @telefono INT,
         @email NVARCHAR(50),
         @cbu CHAR(22),
-        @idUF INT;
+        @total_m2 SMALLINT,
+        @piso VARCHAR(4),
+        @depto CHAR(1),
+        @coef DECIMAL(5,2),
+        @baulera_m2 TINYINT,
+        @cochera_m2 TINYINT;
 
-    WHILE EXISTS (SELECT 1 FROM adm.UnidadFuncional WHERE id_consorcio = @id_consorcio AND id_prop IS NULL)
+    WHILE @i <= @cantidad_departamentos
     BEGIN
-        -- Selecciona la siguiente UF vacía (una diferente cada iteración)
-        SELECT TOP 1 @idUF = id_uni_func
-        FROM adm.UnidadFuncional
-        WHERE id_consorcio = @id_consorcio AND id_prop IS NULL
-        ORDER BY id_uni_func;
+        ------------------------------------------------------
+        -- Determinar piso y m2 según el número de depto
+        ------------------------------------------------------
+        IF @i BETWEEN 1 AND 4
+        BEGIN
+            SET @total_m2 = 40;
+            SET @piso = 'PB';
+            SET @coef = 5.56;
+        END
+        ELSE IF @i BETWEEN 5 AND 8
+        BEGIN
+            SET @total_m2 = 60;
+            SET @piso = '1';
+            SET @coef = 8.33;
+        END
+        ELSE
+        BEGIN
+            SET @total_m2 = 80;
+            SET @piso = '2';
+            SET @coef = 11.11;
+        END;
 
-        --Crear propietario
+        ------------------------------------------------------
+        -- Asignar depto A/B/C/D en ciclo
+        ------------------------------------------------------
+        SET @depto = CHAR(64 + ((@i - 1) % 4) + 1); -- 1=A, 2=B, 3=C, 4=D
+
+        ------------------------------------------------------
+        -- Generar propietario
+        ------------------------------------------------------
         SET @nombrePers = 'Prop_' + CAST(@i AS NVARCHAR(5));
         SET @apellido   = 'Apellido' + CAST(@i AS NVARCHAR(5));
         SET @dni        = 40000000 + @i;
@@ -98,15 +133,17 @@ BEGIN
 
         SET @id_prop = IDENT_CURRENT('adm.Propietario');
 
-        --Crear inquilino (solo si i es par)
+        ------------------------------------------------------
+        -- Generar inquilino solo si i es par
+        ------------------------------------------------------
         IF (@i % 2 = 0)
         BEGIN
             SET @nombrePers = 'Inq_' + CAST(@i AS NVARCHAR(5));
             SET @apellido   = 'Apellido' + CAST(@i AS NVARCHAR(5));
             SET @dni        = 41000000 + @i;
-            SET @telefono   = 1122000000 + @i;
+            SET @telefono   = 1133000000 + @i;
             SET @email      = @nombrePers + '@hotmail.com';
-            SET @cbu        = RIGHT(CONCAT('21314151000000000000', @i), 22);
+            SET @cbu        = RIGHT(CONCAT('31313131000000000000', @i), 22);
 
             EXEC adm.AgregarInquilino 
                 @nombrePers, @apellido, @dni, @email, @telefono, @cbu;
@@ -116,14 +153,34 @@ BEGIN
         ELSE
             SET @id_inq = NULL;
 
-        --Asignar propietario e inquilino
-        UPDATE adm.UnidadFuncional
-        SET id_prop = @id_prop,
-            id_inq   = @id_inq
-        WHERE id_uni_func = @idUF;
+        ------------------------------------------------------
+        -- Generar valores de baulera y cochera
+        ------------------------------------------------------
+        IF @tieneBaulera = 1
+            SET @baulera_m2 = CAST(FLOOR(RAND() * 6) as TINYINT); -- entre 0 y 5
+        ELSE
+            SET @baulera_m2 = 0;
+
+        IF @tieneCochera = 1
+            SET @cochera_m2 = CAST(FLOOR(RAND() * 6) as TINYINT);
+        ELSE
+            SET @cochera_m2 = 0;
+
+        ------------------------------------------------------
+        -- Crear la Unidad Funcional
+        ------------------------------------------------------
+        INSERT INTO adm.UnidadFuncional
+            (id_consorcio, id_inq, id_prop, total_m2, piso, depto, coeficiente, cbu, baulera_m2, cochera_m2)
+        VALUES
+            (@id_consorcio, @id_inq, @id_prop, @total_m2, @piso, @depto, @coef, @cbu, @baulera_m2, @cochera_m2);
 
         SET @i += 1;
     END;
-    PRINT 'Consorcio ' +@nombre + ' generado .';
+
+    PRINT 'Consorcio ' + @nombre + ' generado correctamente con sus unidades funcionales, propietarios e inquilinos.';
 END;
 GO
+
+
+-- exec test.GeneraConsorcioPersonasUF 1, 0
+-- CREATE SCHEMA test
