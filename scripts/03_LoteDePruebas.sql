@@ -183,7 +183,8 @@ GO
 
 CREATE OR ALTER PROCEDURE test.GeneraExpensaProveedorGastos
     @id_consorcio INT,
-    @mes VARCHAR(20)
+    @mes VARCHAR(20),
+    @gasto_extraordinario BIT --Genera gasto extrarordinario si se encuentra en 1
 
 AS
 BEGIN
@@ -199,11 +200,20 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        IF @id_consorcio IS NULL
+        --Validación de consorcio
+        IF NOT EXISTS (SELECT 1 FROM adm.Consorcio WHERE id_consorcio = @id_consorcio)
         BEGIN
-            RAISERROR('No existe el consorcio con esa id.',16,1);
-            ROLLBACK TRANSACTION;
-            RETURN;
+            RAISERROR('No existe el consorcio con esa id.',16,1)
+            ROLLBACK TRANSACTION
+            RETURN
+        END
+
+        --Validación de gasto_extraordinario
+        IF @gasto_extraordinario IS NULL
+        BEGIN
+            RAISERROR('Elija 1 o 0, si quiere o no gasto extraordinario',16,1)
+            ROLLBACK TRANSACTION
+            RETURN
         END
 
         --Generación de expensa
@@ -254,8 +264,9 @@ BEGIN
         EXEC gasto.AgregarGastoGeneral
             @id_consorcio, @id_expensa, 35000, @fecha, 'Gasto general'
 
-        EXEC gasto.AgregarGastoExtraordinario
-            @id_expensa, 80000, @fecha, 'Gasto extraordinario', 1, 1
+        IF @gasto_extraordinario = 1
+            EXEC gasto.AgregarGastoExtraordinario
+                @id_expensa, 80000, @fecha, 'Gasto extraordinario', 1, 1
 
         COMMIT TRANSACTION
 
@@ -263,8 +274,91 @@ BEGIN
     BEGIN CATCH
         PRINT('Error al generar gastos: ' + ERROR_MESSAGE())
         IF XACT_STATE() <> 0 ROLLBACK TRANSACTION
-        RETURN;
+        RETURN
     END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE test.GenerarPagos
+    @id_consorcio INT,
+    @mes VARCHAR(20)
+
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    --Declaración de variables para los pagos
+    DECLARE
+        @id_uni_func INT,
+        @fecha DATETIME,
+        @cbu_cvu CHAR(22),
+        @monto DECIMAL(10,2),
+        @i INT = 1,
+        @total_uni_func INT
+
+    BEGIN TRY
+        BEGIN TRANSACTION
+
+        --Validación de consorcio
+        IF NOT EXISTS (SELECT 1 FROM adm.Consorcio WHERE id_consorcio = @id_consorcio)
+        BEGIN
+            RAISERROR('No existe consorcio con esa id.', 16, 1)
+            ROLLBACK TRANSACTION
+            RETURN
+        END
+
+        --Tabla temporal para almacenar las UF
+        DECLARE @ufs TABLE (
+            fila INT IDENTITY(1,1),
+            id_uni_func INT,
+            cbu CHAR(22)
+        )
+
+        --Inserción de valores a la tabla temporal
+        INSERT INTO @ufs (id_uni_func, cbu)
+        SELECT id_uni_func, cbu
+        FROM adm.UnidadFuncional
+        WHERE id_consorcio = @id_consorcio
+
+        SET @total_uni_func = (SELECT COUNT(*) FROM @ufs)
+
+        --WHILE que recorre las UFs
+        WHILE @i <= @total_uni_func
+        BEGIN
+            SELECT 
+                @id_uni_func = id_uni_func,
+                @cbu_cvu = cbu
+            FROM @ufs
+            WHERE fila = @i
+            
+            --TODO: Validación del cbu (no se si es necesaria)
+
+            --Declaración de fecha
+            DECLARE @mes_formateado INT = MONTH(adm.ObtenerPrimerDiaDelMes(@mes))
+            --Cambio si el mes es Diciembre para que no quede un mes 13
+            IF @mes_formateado = 12
+                SET @mes_formateado = 0
+            SET @fecha = DATEFROMPARTS(2025, @mes_formateado + 1, (@i % 10) + 1)
+           
+            SET @monto = (@i % 4) * 10000 + 40000
+
+            --Agregado del pago a la tabla
+            EXEC fin.AgregarPago
+                @id_uni_func, @fecha, @cbu_cvu, @monto
+
+            SET @i += 1
+        END
+
+        COMMIT TRANSACTION
+
+    END TRY
+    BEGIN CATCH
+        PRINT('Error al generar pagos: ' + ERROR_MESSAGE())
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION
+        RETURN  
+    END CATCH
+
+--TODO: Faltaría ver como hacer con los pagos no asociados
 END
 GO
 

@@ -286,6 +286,35 @@ BEGIN
 END
 GO
 
+CREATE OR ALTER PROCEDURE adm.AgregarExpensa
+	@id_consorcio INT, 
+	@mes VARCHAR(20),
+	@id_expensa INT OUTPUT
+
+AS
+BEGIN
+	BEGIN TRY
+		
+		IF NOT EXISTS(SELECT TOP 1 * FROM adm.Consorcio WHERE id_consorcio=@id_consorcio)
+		BEGIN
+			RAISERROR('No existe consorcio con ese id.',16,1)
+			RETURN
+		END
+		DECLARE @fecha_expensa DATE = DATEADD(DAY, -1, adm.ObtenerPrimerDiaDelMes(@mes)) -- Expensa al dia siguiente al ultimo dia del mes que acaba de terminar. Si la expensa es de Agosto, entonces la fecha de la expensa es al 01/9.
+		DECLARE @primer_vencimiento DATE = DATEADD(DAY, 5, @fecha_expensa) -- Primer vencimiento al 5
+		DECLARE @segundo_vencimiento DATE = DATEADD(DAY, 5, @primer_vencimiento) -- Primer vencimiento al 10
+
+		INSERT INTO adm.Expensa(id_consorcio,fechaGenerado,fechaPrimerVenc,fechaSegVenc)
+			VALUES (@id_consorcio, @fecha_expensa, @primer_vencimiento, @segundo_vencimiento)
+		SET @id_expensa = SCOPE_IDENTITY();
+
+	END TRY
+	BEGIN CATCH
+		PRINT('Error al agregar la expensa: ' + ERROR_MESSAGE())
+	END CATCH
+END
+GO
+
 -------------- GASTO --------------
 -- TODO: Creo que se puede hacer con SQL Dinamico toda esta parte. El SP es el mismo, solo cambia 
 --		 el nombre de la tabla. Salvo el gasto de limpieza y el extraordinario
@@ -468,35 +497,6 @@ GO
 -- Leer Resumen Bancario
 -- Generar Estado de Cuenta
 
-CREATE OR ALTER PROCEDURE adm.AgregarExpensa
-	@id_consorcio INT, 
-	@mes VARCHAR(20),
-	@id_expensa INT OUTPUT
-
-AS
-BEGIN
-	BEGIN TRY
-		
-		IF NOT EXISTS(SELECT TOP 1 * FROM adm.Consorcio WHERE id_consorcio=@id_consorcio)
-		BEGIN
-			RAISERROR('No existe consorcio con ese id.',16,1)
-			RETURN
-		END
-		DECLARE @fecha_expensa DATE = DATEADD(DAY, -1, adm.ObtenerPrimerDiaDelMes(@mes)) -- Expensa al dia siguiente al ultimo dia del mes que acaba de terminar. Si la expensa es de Agosto, entonces la fecha de la expensa es al 01/9.
-		DECLARE @primer_vencimiento DATE = DATEADD(DAY, 5, @fecha_expensa) -- Primer vencimiento al 5
-		DECLARE @segundo_vencimiento DATE = DATEADD(DAY, 5, @primer_vencimiento) -- Primer vencimiento al 10
-
-		INSERT INTO adm.Expensa(id_consorcio,fechaGenerado,fechaPrimerVenc,fechaSegVenc)
-			VALUES (@id_consorcio, @fecha_expensa, @primer_vencimiento, @segundo_vencimiento)
-		SET @id_expensa = SCOPE_IDENTITY();
-
-	END TRY
-	BEGIN CATCH
-		PRINT('Error al agregar la expensa: ' + ERROR_MESSAGE())
-	END CATCH
-END
-GO
---------------------------ESQUEMA FINANZAS--------------------------
 CREATE OR ALTER PROCEDURE fin.AgregarFactura
     @id_proveedor INT,
 	@fecha_emision DATE,
