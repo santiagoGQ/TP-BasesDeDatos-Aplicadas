@@ -488,8 +488,14 @@ CREATE OR ALTER PROCEDURE fin.AgregarPago
 	@monto DECIMAL(10,2)
 AS
 BEGIN
-	INSERT INTO fin.Pago(id_uni_func, fecha, cbu_cvu, monto)
-		VALUES (@id_uni_func, @fecha, @cuenta_origen, @monto)
+
+	--Valido que no exista un registro igual
+	IF NOT EXISTS (SELECT 1 FROM fin.Pago 
+					WHERE ISNULL(id_uni_func,-1) = ISNULL(@id_uni_func,-1) AND fecha = @fecha AND ISNULL(cbu_cvu,-1) = ISNULL(@cuenta_origen,-1))
+	BEGIN
+		INSERT INTO fin.Pago(id_uni_func, fecha, cbu_cvu, monto)
+			VALUES (@id_uni_func, @fecha, @cuenta_origen, @monto)
+	END
 END
 GO
 
