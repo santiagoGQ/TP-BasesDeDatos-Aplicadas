@@ -260,6 +260,58 @@ BEGIN
 END
 GO
 
+CREATE OR ALTER PROCEDURE adm.AgregarProveedor
+	@razon_social NVARCHAR(51),
+    @motivo VARCHAR(30),
+    @id_consorcio INT,
+    @cuenta VARCHAR(50),
+	@id_proveedor INT OUTPUT
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	BEGIN TRY
+		
+		--Validar existencia de consorcio
+		IF NOT EXISTS (SELECT 1 FROM adm.Consorcio WHERE id_consorcio = @id_consorcio)
+        BEGIN
+            RAISERROR('El consorcio indicado no existe.', 16, 1)
+            RETURN
+        END
+
+		--Validar que razon social no esté vacío
+		IF LEN(LTRIM(RTRIM(@razon_social))) = 0
+        BEGIN
+            RAISERROR('La razón social no puede estar vacía.', 16, 1)
+            RETURN
+        END
+
+		--Normalizar motivo
+		SET @motivo = UPPER(RTRIM(LTRIM(@motivo)))
+
+		--Validar que no existe proveedor con esa razon social para ese consorcio
+		 IF EXISTS (
+            SELECT 1 FROM adm.Proveedor 
+            WHERE LTRIM(RTRIM(LOWER(razon_social))) = LTRIM(RTRIM(LOWER(@razon_social)))
+              AND id_consorcio = @id_consorcio
+        )
+        BEGIN
+            RAISERROR('Ya existe un proveedor con esa razón social para este consorcio.', 16, 1);
+            RETURN
+        END
+
+		INSERT INTO adm.Proveedor(razon_social,motivo,id_consorcio,cuenta)
+		VALUES (@razon_social,@motivo,@id_consorcio,@cuenta)
+
+		SET @id_proveedor = SCOPE_IDENTITY()
+
+	END TRY
+	BEGIN CATCH
+		PRINT('Error al agregar proveedor: ' + ERROR_MESSAGE())
+	END CATCH
+END
+GO
+
 -------------- GASTO --------------
 -- TODO: Creo que se puede hacer con SQL Dinamico toda esta parte. El SP es el mismo, solo cambia 
 --		 el nombre de la tabla. Salvo el gasto de limpieza y el extraordinario
@@ -313,12 +365,22 @@ GO
 -- TODO: Revisar este SP
 CREATE OR ALTER PROCEDURE gasto.AgregarGastoExtraordinario
 	@id_expensa INT,
-	@nro_factura INT,
+	@importe DECIMAL(10,2),
+	@fecha_expensa DATE,
 	@descripcion VARCHAR(100),
 	@nro_cuota TINYINT,
 	@total_cuotas TINYINT
 AS
 BEGIN
+	DECLARE @nro_factura INT
+	DECLARE @fecha_factura DATE = DATEADD(DAY, -8, @fecha_expensa) -- Como no hay fecha de gastos, lo ponemos en algun momento durante el mes
+	DECLARE @id_proveedor INT
+	EXEC fin.AgregarFactura 
+		@id_proveedor, 
+		@fecha_factura,
+		@importe,
+		@nro_factura OUTPUT
+
 	INSERT INTO gasto.Extraordinario(id_expensa, nro_factura, descripcion, nro_cuota, total_cuotas)
 		VALUES (@id_expensa, @nro_factura, @descripcion, @nro_cuota, @total_cuotas)
 END
