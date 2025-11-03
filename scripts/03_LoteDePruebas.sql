@@ -92,7 +92,7 @@ BEGIN
     WHILE @i <= @cantidad_departamentos
     BEGIN
         ------------------------------------------------------
-        -- Determinar piso y m2 seg鷑 el n鷐ero de depto
+        -- Determinar piso y m2 seg煤n el n煤mero de depto
         ------------------------------------------------------
         IF @i BETWEEN 1 AND 4
         BEGIN
@@ -182,5 +182,89 @@ END;
 GO
 
 
--- exec test.GeneraConsorcioPersonasUF 1, 0
--- CREATE SCHEMA test
+--TODO: Revisar que funcione correctamente
+CREATE OR ALTER PROCEDURE test.GeneraExpensaProveedorGastos
+    @id_consorcio INT,
+    @mes VARCHAR(20)
+
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    --Declaraci贸n de variables para la expensa
+    DECLARE
+        @fecha DATETIME,
+        @id_expensa INT,
+        @id_limpieza INT, @id_admin INT, @id_seguro INT, @id_bancario INT,
+        @id_servpublico INT
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        IF @id_consorcio IS NULL
+        BEGIN
+            RAISERROR('No existe el consorcio con esa id.',16,1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END
+
+        --Generaci贸n de expensa
+        EXEC adm.AgregarExpensa
+            @id_consorcio, @mes, @id_expensa OUTPUT
+
+        --Creaci贸n de proveedores si no existen, guardando su id
+        IF NOT EXISTS (SELECT 1 FROM adm.Proveedor WHERE motivo = 'GASTOS DE LIMPIEZA' AND id_consorcio = @id_consorcio)
+            EXEC adm.AgregarProveedor
+                'Empresa Limpieza', 'GASTOS DE LIMPIEZA', @id_consorcio, '21314151000000000001', @id_limpieza OUTPUT;
+
+        IF NOT EXISTS (SELECT 1 FROM adm.Proveedor WHERE motivo = 'GASTOS BANCARIOS' AND id_consorcio = @id_consorcio)
+            EXEC adm.AgregarProveedor
+                'Empresa Bancaria', 'GASTOS BANCARIOS', @id_consorcio, '21314151000000000002', @id_bancario OUTPUT;
+        
+        IF NOT EXISTS (SELECT 1 FROM adm.Proveedor WHERE motivo = 'GASTOS DE ADMINISTRACION' AND id_consorcio = @id_consorcio)
+            EXEC adm.AgregarProveedor
+                'Empresa Administrativa', 'GASTOS DE ADMINISTRACION', @id_consorcio, '21314151000000000003', @id_admin OUTPUT;
+        
+        IF NOT EXISTS (SELECT 1 FROM adm.Proveedor WHERE motivo = 'SEGUROS' AND id_consorcio = @id_consorcio)
+            EXEC adm.AgregarProveedor
+                'Empresa de seguros', 'SEGUROS', @id_consorcio, '21314151000000000004', @id_seguro OUTPUT;
+
+        IF NOT EXISTS (SELECT 1 FROM adm.Proveedor WHERE motivo = 'SERVICIOS PUBLICOS' AND id_consorcio = @id_consorcio)
+            EXEC adm.AgregarProveedor
+                'Empresa de servicios publicos', 'SERVICIOS PUBLICOS', @id_consorcio, '21314151000000000005', @id_servpublico OUTPUT;
+
+        --Generaci贸n de fecha para las facturas
+        SET @fecha = DATEFROMPARTS ( 2025, CAST(LTRIM(RTRIM(@mes)) AS INT), 12)
+
+        --Generaci贸n de gastos y facturas
+        EXEC gasto.AgregarGastoAdministracion
+            @id_consorcio, @id_expensa, 120000, @fecha, 'Gasto administrativo'
+
+        EXEC gasto.AgregarGastoBancario
+            @id_consorcio, @id_expensa, 150000, @fecha, 'Gasto bancario'
+
+        EXEC gasto.AgregarGastoLimpieza
+            @id_consorcio, @id_expensa, 60000, @fecha, 'Gasto de limpieza'
+
+        EXEC gasto.AgregarGastoSeguro
+            @id_consorcio, @id_expensa, 100000, @fecha, 'Gasto de seguro'
+
+        EXEC gasto.AgregarGastoServicioPublico --No se si agregar el tipo de servicio
+            @id_consorcio, @id_expensa, 200000, @fecha, 'Gasto de luz'
+
+        EXEC gasto.AgregarGastoGeneral
+            @id_consorcio, @id_expensa, 35000, @fecha, 'Gasto general'
+
+        EXEC gasto.AgregarGastoExtraordinario
+            @id_expensa, 80000, @fecha, 'Gasto extraordinario', 1, 1
+
+        COMMIT TRANSACTION
+
+    END TRY
+    BEGIN CATCH
+        PRINT('Error al generar gastos: ' + ERROR_MESSAGE())
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION
+        RETURN;
+    END CATCH
+END
+GO
