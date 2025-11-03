@@ -102,75 +102,49 @@ BEGIN
 END
 GO
 
--- TODO: Para hacer la modificacion de Inquilino o Propietario a traves del CSV podriamos usar SQL dinamico quizas.
-
 CREATE OR ALTER PROCEDURE adm.AgregarConsorcio
 	@nombre VARCHAR(25),
 	@direccion VARCHAR(75),
 	@metros_totales SMALLINT,
-	@cantidad_de_pisos TINYINT,
+	@cantidad_de_deptos TINYINT,
 	@precio_bauleraM2 DECIMAL(10,2),
+	@precio_cocheraM2 DECIMAL(10,2),
 	@id_tipo_serv_limpieza INT
 AS
 BEGIN
+    BEGIN TRANSACTION
+	BEGIN TRY
+		IF @metros_totales <= 0
+		BEGIN
+			RAISERROR('Los metros totales deben ser mayores a 0.', 16, 1);
+			RETURN;
+		END;
 
-	IF @metros_totales <= 0
-	BEGIN
-		RAISERROR('Los metros totales deben ser mayores a 0.', 16, 1);
-		RETURN;
-	END;
+		IF @cantidad_de_deptos <= 0
+		BEGIN
+			RAISERROR('La cantidad de departamentos debe ser mayor a 0.', 16, 1);
+			RETURN;
+		END;
 
-	IF @cantidad_de_pisos <= 0
-	BEGIN
-		RAISERROR('La cantidad de pisos debe ser mayor a 0.', 16, 1);
-		RETURN;
-	END;
+		IF NOT EXISTS (SELECT 1 FROM adm.TipoServicioLimpieza WHERE id_tipo_serv_limpieza = @id_tipo_serv_limpieza)
+		BEGIN
+			RAISERROR('El tipo de servicio de limpieza indicado no existe.', 16, 1);
+			RETURN;
+		END;
 
-	IF NOT EXISTS (SELECT 1 FROM adm.TipoServicioLimpieza WHERE id_tipo_serv_limpieza = @id_tipo_serv_limpieza)
-	BEGIN
-		RAISERROR('El tipo de servicio de limpieza indicado no existe.', 16, 1);
-		RETURN;
-	END;
+		DECLARE @id_consorcio INT
+		DECLARE @i INT = 1
 
-	DECLARE @id_consorcio INT
-	DECLARE @i INT = 1
-	DECLARE @cant_deptos TINYINT = @cantidad_de_pisos * 4 -- Cada piso de los consorcios va a tener 4 departamentos.
-
-	INSERT INTO adm.Consorcio(nombre, direccion, metros_totales, cantidad_uf, precio_bauleraM2, id_tipo_serv_limpieza)
-		VALUES (@nombre, @direccion, @metros_totales, @cant_deptos, @precio_bauleraM2, @id_tipo_serv_limpieza)
+		INSERT INTO adm.Consorcio(nombre, direccion, metros_totales, cantidad_uf, precio_bauleraM2, precio_cocheraM2, id_tipo_serv_limpieza)
+			VALUES (@nombre, @direccion, @metros_totales, @cantidad_de_deptos, @precio_bauleraM2, @precio_cocheraM2, @id_tipo_serv_limpieza)
 	
-	SET @id_consorcio=SCOPE_IDENTITY() --obtiene el valor del ultimo identity generado
-
-	--generacion de unidades funcionales en el consorcio agregado
-	WHILE @i<=@cant_deptos
-	BEGIN
-		DECLARE @piso INT, @letra CHAR(1), @total_m2 SMALLINT, @baulera_m2 TINYINT, @cochera_m2 TINYINT
-
-		--valor con variacion del +-10%
-        DECLARE @valor DECIMAL(4,2)=(0.9+RAND()*0.2)
-
-		--genera cbu aleatorio de longitud 22
-			--genera numero y lo castea como cadena, luego
-			--right(cadena,m) agarra los m caracteres de la derecha
-		DECLARE @cbu CHAR(22) = RIGHT('0000000000000000000000'+CAST(ABS(CHECKSUM(NEWID())) as VARCHAR(22)),22)
-
-		SELECT
-			@piso = tf.piso,
-			@letra = tf.letra,
-			@total_m2 = tf.total_m2,
-			@cbu = tf.cbu,
-			@baulera_m2 = tf.baulera_m2,
-			@cochera_m2 = tf.cochera_m2
-		FROM adm.GenerarDatosUF(@i,@cantidad_de_pisos,@metros_totales,@valor,@cbu) AS tf
-
-		INSERT INTO adm.UnidadFuncional
-			(id_consorcio, id_inq, id_prop, total_m2, depto, cbu, baulera_m2, cochera_m2)
-			VALUES
-				(@id_consorcio, NULL, NULL, @total_m2, CONCAT(@piso, @letra), @cbu, @baulera_m2, @cochera_m2);
-		SET @i=@i+1
-	END
-	-- La idea es que una vez que creemos el consorcio, no quede solo, sino que tambien existan sus unidades funcionales asignadas.
-	-- Esto creo que no deberia usarse para cuando leemos el CSV de unidades funcionales. Solo para cuando nosotros generemos datos.
+	COMMIT
+	END TRY
+	BEGIN CATCH
+		ROLLBACK
+		PRINT 'Ocurrio un error al generar el consorcio.';
+		PRINT 'Mensaje: ' + ERROR_MESSAGE();
+	END CATCH
 END
 GO
 
@@ -581,7 +555,7 @@ END
 GO
 
 CREATE OR ALTER PROCEDURE fin.AgregarEstadoDeCuenta
-    @id_expensa INT, @id_consorcio INT, @id_uni_func INT, @prorateo DECIMAL(3,2), @piso VARCHAR(4), @depto VARCHAR(4),
+    @id_expensa INT, @id_consorcio INT, @id_uni_func INT, @prorateo DECIMAL(4,2), @piso VARCHAR(4), @depto VARCHAR(4),
     @cochera DECIMAL(10,2),@baulera DECIMAL(10,2),@nom_y_ap_propietario VARCHAR(50),
     @anio VARCHAR(10), @mes VARCHAR(15), @total_expensa_ordinarios DECIMAL(10,2), @total_expensa DECIMAL(10,2)
 AS
@@ -608,7 +582,7 @@ BEGIN
 		DECLARE @id_expensa_anterior INT = (SELECT id_expensa from fin.Vista_GastosPorExpensa 
 												where id_consorcio = @id_consorcio AND mes = (@mes-1) AND anio = @anio)
 		-- Ayuda para multiplicar valores
-		DECLARE @multiplicador DECIMAL(3,2) = @prorateo / 100
+		DECLARE @multiplicador DECIMAL(4,2) = @prorateo / 100
 		DECLARE @fecha_expensa_generada DATE,
 				@fecha_primer_venc DATE,
 				@fecha_segundo_venc DATE,
@@ -625,6 +599,13 @@ BEGIN
 			SET @fecha_expensa_generada = (SELECT fechaGenerado from adm.Expensa where id_expensa= @id_expensa_anterior)
 			SET @fecha_primer_venc = (SELECT fechaPrimerVenc from adm.Expensa where id_expensa= @id_expensa_anterior)
 			SET @fecha_segundo_venc = (SELECT fechaSegVenc from adm.Expensa where id_expensa= @id_expensa_anterior)
+			
+			-- TODO: Cambiar como se calcula el monto pagado. Deberiamos fijarnos cuanto ingreso antes del primer vencimiento
+			-- con esa info nos fijamos si ya no tiene que pagar mas nada. Si ya tiene el saldo en <=0 , leemos todo el resto de
+			-- pagos que haya hecho durante el mes (seria ultimo dia del mes - 1 para que no colisione con la fecha de generacion
+			-- del siguiente mes), y le sumamos a monto pagado. De esa forma sabemos en que momento pago y si adeuda. De la forma
+			-- en la que esta codeado ahora, si el tipo pago todo pero hizo una transferencia a mitad de mes, le cobra una deuda
+			-- cuando en realidad ya la podia tener saldada.
 			SET @monto_pagado = (SELECT SUM(monto) from fin.Pago 
 									WHERE id_uni_func = @id_uni_func AND
 										fecha >= @fecha_expensa_generada AND fecha <= DATEADD(DAY, 1, @fecha_segundo_venc))
@@ -649,10 +630,7 @@ BEGIN
 			SET @deuda = 0
 			SET @interes_mora = 0
 		END
-		PRINT(@multiplicador)
-		PRINT(@total_expensa_ordinarios)
-		DECLARE @TEST DECIMAL (10,2) = @total_expensa_ordinarios * @multiplicador
-		PRINT(@TEST)
+		
 		-- Total extraordinarias es TotalDeTodos - ordinarias.
 		DECLARE @expensas_extraordinarias DECIMAL(10,2) = @total_expensa - @total_expensa_ordinarios
 		DECLARE @total_a_pagar DECIMAL (10,2)= (@total_expensa * @multiplicador) + @deuda + @interes_mora + @cochera + @baulera

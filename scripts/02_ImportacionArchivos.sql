@@ -159,7 +159,7 @@ BEGIN
         @id_consorcio,
         piso,
         departamento,
-        CAST(REPLACE(coeficiente, ',', '.') AS DECIMAL(3,2)),
+        CAST(REPLACE(coeficiente, ',', '.') AS DECIMAL(4,2)),
         CAST(m2_unidad_funcional AS DECIMAL(10,2)),
         CAST(m2_baulera AS DECIMAL(10,2)),
         CAST(m2_cochera AS DECIMAL(10,2))
@@ -630,7 +630,7 @@ BEGIN
         id_prop INT,
         piso VARCHAR(4),
         depto VARCHAR(4),
-        coeficiente DECIMAL(3,2),
+        coeficiente DECIMAL(4,2),
         cbu CHAR(22),
         baulera_m2 TINYINT,
         cochera_m2 TINYINT
@@ -654,7 +654,7 @@ BEGIN
             DECLARE @id_uni_func INT,
                     @id_inq INT,
                     @id_prop INT,
-                    @coeficiente DECIMAL(3,2),
+                    @coeficiente DECIMAL(4,2),
                     @piso VARCHAR(4),
                     @depto VARCHAR(4),
                     @gasto_baulera DECIMAL(10,2),
