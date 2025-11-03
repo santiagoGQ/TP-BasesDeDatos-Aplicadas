@@ -223,27 +223,42 @@ BEGIN
         --Creación de proveedores si no existen, guardando su id
         IF NOT EXISTS (SELECT 1 FROM adm.Proveedor WHERE motivo = 'GASTOS DE LIMPIEZA' AND id_consorcio = @id_consorcio)
             EXEC adm.AgregarProveedor
-                'Empresa Limpieza', 'GASTOS DE LIMPIEZA', @id_consorcio, '21314151000000000001', @id_limpieza OUTPUT;
+                'Empresa Limpieza', 'GASTOS DE LIMPIEZA', @id_consorcio, '21314151000000000001', @id_limpieza OUTPUT
+        ELSE
+            SELECT @id_limpieza = id_proveedor FROM adm.Proveedor 
+            WHERE motivo = 'GASTOS DE LIMPIEZA' AND id_consorcio = @id_consorcio
 
         IF NOT EXISTS (SELECT 1 FROM adm.Proveedor WHERE motivo = 'GASTOS BANCARIOS' AND id_consorcio = @id_consorcio)
             EXEC adm.AgregarProveedor
-                'Empresa Bancaria', 'GASTOS BANCARIOS', @id_consorcio, '21314151000000000002', @id_bancario OUTPUT;
-        
+                'Empresa Bancaria', 'GASTOS BANCARIOS', @id_consorcio, '21314151000000000002', @id_bancario OUTPUT
+        ELSE
+            SELECT @id_bancario = id_proveedor FROM adm.Proveedor 
+            WHERE motivo = 'GASTOS BANCARIOS' AND id_consorcio = @id_consorcio
+
         IF NOT EXISTS (SELECT 1 FROM adm.Proveedor WHERE motivo = 'GASTOS DE ADMINISTRACION' AND id_consorcio = @id_consorcio)
             EXEC adm.AgregarProveedor
-                'Empresa Administrativa', 'GASTOS DE ADMINISTRACION', @id_consorcio, '21314151000000000003', @id_admin OUTPUT;
-        
+                'Empresa Administrativa', 'GASTOS DE ADMINISTRACION', @id_consorcio, '21314151000000000003', @id_admin OUTPUT
+        ELSE
+            SELECT @id_admin = id_proveedor FROM adm.Proveedor 
+            WHERE motivo = 'GASTOS DE ADMINISTRACION' AND id_consorcio = @id_consorcio
+
         IF NOT EXISTS (SELECT 1 FROM adm.Proveedor WHERE motivo = 'SEGUROS' AND id_consorcio = @id_consorcio)
             EXEC adm.AgregarProveedor
-                'Empresa de seguros', 'SEGUROS', @id_consorcio, '21314151000000000004', @id_seguro OUTPUT;
+                'Empresa de seguros', 'SEGUROS', @id_consorcio, '21314151000000000004', @id_seguro OUTPUT
+        ELSE
+            SELECT @id_seguro = id_proveedor FROM adm.Proveedor 
+            WHERE motivo = 'SEGUROS' AND id_consorcio = @id_consorcio
 
         IF NOT EXISTS (SELECT 1 FROM adm.Proveedor WHERE motivo = 'SERVICIOS PUBLICOS' AND id_consorcio = @id_consorcio)
             EXEC adm.AgregarProveedor
-                'Empresa de servicios publicos', 'SERVICIOS PUBLICOS', @id_consorcio, '21314151000000000005', @id_servpublico OUTPUT;
+                'Empresa de servicios publicos', 'SERVICIOS PUBLICOS', @id_consorcio, '21314151000000000005', @id_servpublico OUTPUT
+        ELSE
+            SELECT @id_servpublico = id_proveedor FROM adm.Proveedor 
+            WHERE motivo = 'SERVICIOS PUBLICO' AND id_consorcio = @id_consorcio
 
         --Generación de fecha para las facturas
         DECLARE @mes_formateado INT = MONTH(adm.ObtenerPrimerDiaDelMes(@mes))
-        SET @fecha = DATEFROMPARTS ( 2025, CAST(LTRIM(RTRIM(@mes_formateado)) AS INT), 12)
+        SET @fecha = DATEFROMPARTS ( 2025, @mes_formateado, 12)
 
         --Generación de gastos y facturas
         EXEC gasto.AgregarGastoAdministracion
