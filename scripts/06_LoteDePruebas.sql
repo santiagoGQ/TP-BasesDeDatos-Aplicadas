@@ -329,7 +329,7 @@ BEGIN
             DECLARE @mes_formateado INT = MONTH(adm.ObtenerPrimerDiaDelMes(@mes))
             SET @fecha = DATEFROMPARTS(2025, @mes_formateado, (@i % 10) + 1)
            
-            SET @monto = (@i % 4) * 10000 + 120000
+            SET @monto = 40000 + (100000 - 40000) * RAND(CHECKSUM(NEWID()))
 
             EXEC fin.AgregarPago
                 @id_uni_func, @fecha, @cbu_cvu, @monto

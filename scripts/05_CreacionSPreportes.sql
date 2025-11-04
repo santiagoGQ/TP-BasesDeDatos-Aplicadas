@@ -6,6 +6,7 @@
 --   GARAY QUINTERO, SANTIAGO
 --   SIMCIC, TOBIAS
 --------------------------------------------------
+-- Este archivo contiene la creacion de los Store Procedure de reportes pertenecientes al TP 6.
 
 --Cambia a COM2900_G04
 USE COM2900_G04
