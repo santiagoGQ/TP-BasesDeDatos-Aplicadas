@@ -145,5 +145,5 @@ FROM adm.UnidadFuncional uf inner join adm.Consorcio cons on cons.id_consorcio =
 GO
 
 -- SELECT * FROM fin.Vista_GastosPorExpensa
--- SELECT * FROM fin.Vista_UfYConsorcio where id_consorcio=3
+-- SELECT * FROM fin.Vista_UfYConsorcio where id_consorcio=1
 -- SELECT (SELECT nombre from adm.Consorcio where id_consorcio=1) + (SELECT direccion from adm.Consorcio where id_consorcio=1)

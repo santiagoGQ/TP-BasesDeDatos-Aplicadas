@@ -217,8 +217,9 @@ BEGIN
         END
 
         --Generación de expensa
+        DECLARE @mes_expensa VARCHAR(20) = adm.ObtenerMesSiguiente(@mes)
         EXEC adm.AgregarExpensa
-            @id_consorcio, @mes, @id_expensa OUTPUT
+            @id_consorcio, @mes_expensa, @id_expensa OUTPUT
 
         --Creación de proveedores si no existen, guardando su id
         IF NOT EXISTS (SELECT 1 FROM adm.Proveedor WHERE motivo = 'GASTOS DE LIMPIEZA' AND id_consorcio = @id_consorcio)
@@ -349,11 +350,10 @@ BEGIN
             --Declaración de fecha
             DECLARE @mes_formateado INT = MONTH(adm.ObtenerPrimerDiaDelMes(@mes))
             --Cambio si el mes es Diciembre para que no quede un mes 13
-            IF @mes_formateado = 12
-                SET @mes_formateado = 0
-            SET @fecha = DATEFROMPARTS(2025, @mes_formateado + 1, (@i % 10) + 1)
+            
+            SET @fecha = DATEFROMPARTS(2025, @mes_formateado, (@i % 10) + 1)
            
-            SET @monto = (@i % 4) * 10000 + 40000
+            SET @monto = (@i % 4) * 10000 + 120000
 
             --Agregado del pago a la tabla
             EXEC fin.AgregarPago
@@ -382,5 +382,35 @@ BEGIN
 END
 GO
 
+-- Generar un consorcio con baulera y cochera
 -- exec test.GeneraConsorcioPersonasUF 1, 1
--- exec test.GeneraExpensaProveedorGastos 6, 'mayo'
+
+-- Gastos para el mes de marzo
+-- exec test.GeneraExpensaProveedorGastos 1, 'marzo', 1
+
+-- Generar la expensa de Marzo 2025. 
+-- exec fin.GenerarExpensa '2025', '3', 'Consorcio_1'
+
+-- Generar pagos para la expensa de marzo (entran en Abril)
+-- exec test.GenerarPagos 1, 'abril'
+
+-- Gastos para el mes de Abril
+-- exec test.GeneraExpensaProveedorGastos 1, 'abril', 1
+
+-- Generar la expensa de Abril 2025. 
+-- exec fin.GenerarExpensa '2025', '4', 'Consorcio_1'
+
+-- Generar pagos para la expensa de Abril (entran en Mayo)
+-- exec test.GenerarPagos 1, 'mayo'
+
+-- Gastos para el mes de Mayo
+-- exec test.GeneraExpensaProveedorGastos 1, 'mayo', 1
+
+-- Generar la expensa de Mayo 2025. 
+-- exec fin.GenerarExpensa '2025', '5', 'Consorcio_1'
+/*
+ exec fin.AgregarEstadoFinanciero 1, 1
+ exec fin.AgregarEstadoFinanciero 2, 1
+ exec fin.AgregarEstadoFinanciero 3, 1
+ */
+-- TRUNCATE TABLE fin.EstadoFinanciero
