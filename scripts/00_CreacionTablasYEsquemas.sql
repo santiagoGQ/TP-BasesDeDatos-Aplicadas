@@ -51,12 +51,17 @@ BEGIN
     EXEC('CREATE SCHEMA gasto');
 END
 GO
---Esquema Gasto vinculado a SP que ejecutan pruebas.
+--Esquema test vinculado a SP que ejecutan pruebas.
 IF SCHEMA_ID('test') IS NULL
 BEGIN
     EXEC('CREATE SCHEMA test');
 END
 GO
+--Esquema rep vinculado a los reportes entrega 6
+IF SCHEMA_ID('rep') IS NULL
+BEGIN
+	EXEC('CREATE SCHEMA rep');
+END
 ----------------CREACION DE TABLAS----------------
 IF OBJECT_ID('adm.TipoServicioLimpieza') IS NULL
 BEGIN

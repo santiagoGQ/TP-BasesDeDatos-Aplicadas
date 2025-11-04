@@ -1,3 +1,17 @@
+--------------------------------------------------
+-- BASES DE DATOS APLICADAS
+--  GRUPO 04
+--  INTEGRANTES
+--   CONDE, FRANCO
+--   GARAY QUINTERO, SANTIAGO
+--   SIMCIC, TOBIAS
+--------------------------------------------------
+
+--Cambia a COM2900_G04
+USE COM2900_G04
+GO
+
+---------CREACION DE LAS VISTAS---------
 CREATE OR ALTER VIEW fin.Vista_GastosPorExpensa
 AS
 SELECT *,
