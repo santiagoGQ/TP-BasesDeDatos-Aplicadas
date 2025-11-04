@@ -150,9 +150,7 @@ GO
 
 CREATE OR ALTER PROCEDURE adm.AgregarEnviadoA
 	@expensa INT,
-	@unidad_funcional INT,
-	@medio_prop VARCHAR(9),
-	@medio_inq VARCHAR(9)
+	@unidad_funcional INT
 AS
 BEGIN
 	BEGIN TRY
@@ -169,21 +167,23 @@ BEGIN
 			RETURN
 		END
 		--validar medios de envio
+		DECLARE @id_inquilino INT,
+				@id_propietario INT,
+				@medio_prop VARCHAR(9),
+				@medio_inq VARCHAR(9)
 
-		SET @medio_inq=UPPER(@medio_inq)
-		SET @medio_prop=UPPER(@medio_prop)
+		SET @id_inquilino = (SELECT id_inq from adm.UnidadFuncional where id_uni_func = @unidad_funcional)
+		SET @id_propietario = (SELECT id_prop from adm.UnidadFuncional where id_uni_func = @unidad_funcional)
 
-		IF @medio_inq NOT IN ('EMAIL','TELEFONO','IMPRESO')
-		BEGIN
-			RAISERROR('Medio de envio del inquilino invalido.',16,1)
-			RETURN
-		END
-		
-		IF @medio_prop NOT IN ('EMAIL','TELEFONO','IMPRESO')
-		BEGIN
-			RAISERROR('Medio de envio del propietario invalido.',16,1)
-			RETURN
-		END
+		IF NOT EXISTS (SELECT email from adm.Propietario where id_prop = @id_propietario)
+			SET @medio_prop = 'EMAIL'
+		ELSE
+			SET @medio_prop = 'IMPRESO'
+
+		IF NOT EXISTS (SELECT email from adm.Inquilino where id_inq = @id_inquilino)
+			SET @medio_inq = 'EMAIL'
+		ELSE
+			SET @medio_inq = 'IMPRESO'
 
 		INSERT INTO adm.EnviadoA(id_expensa,id_uni_func,medio_Comunicacion_Inq,medio_Comunicacion_Prop)
 			VALUES (@expensa,@unidad_funcional,@medio_inq,@medio_prop)
@@ -634,6 +634,8 @@ BEGIN
 			@total_expensa_ordinarios * @multiplicador, 
 			@expensas_extraordinarias * @multiplicador, 
 			@total_a_pagar)
+
+		exec adm.AgregarEnviadoA @id_expensa, @id_uni_func
 
     END TRY
     BEGIN CATCH
