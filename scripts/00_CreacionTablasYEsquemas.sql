@@ -161,7 +161,7 @@ BEGIN
         
 ); END
 
-IF OBJECT_ID('adm.UnidadFuncional') IS NULL -- TODO: Yo agregaria numerito de UF, que seria que numero de UF es concorde al consorcio (no es el id).
+IF OBJECT_ID('adm.UnidadFuncional') IS NULL
 BEGIN
     CREATE TABLE adm.UnidadFuncional(
         id_uni_func INT IDENTITY(1,1),
@@ -366,5 +366,5 @@ BEGIN
         CONSTRAINT PK_EstadoDeCuenta PRIMARY KEY (id_expensa, id_est_de_cuenta),
         CONSTRAINT FK_Expensa_EstadoDeCuenta FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
         CONSTRAINT FK_UF_EstadoDeCuenta FOREIGN KEY (id_uni_func) REFERENCES adm.UnidadFuncional(id_uni_func),
-        --creo que hay que agregar constraint >=0 a casi todo
+        
 );END

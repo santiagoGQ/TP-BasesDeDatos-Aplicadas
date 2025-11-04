@@ -9,6 +9,10 @@
 -- Este archivo contiene las sentencias que prueban un consorcio con cochera y baulera. 
 -- Genera 7 meses de expensas.
 
+--Cambia a COM2900_G04
+USE COM2900_G04
+GO
+
 DECLARE @id_consorcio INT 
 
 -- Generar un consorcio con baulera sin cochera
