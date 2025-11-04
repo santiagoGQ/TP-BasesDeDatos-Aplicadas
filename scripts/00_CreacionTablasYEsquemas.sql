@@ -315,6 +315,7 @@ BEGIN
         fecha DATETIME NOT NULL,
         cbu_cvu CHAR(22) NOT NULL,
         monto DECIMAL(10,2) NOT NULL,
+        asociado BIT NOT NULL, 
 
         CONSTRAINT PK_Pago PRIMARY KEY (id_pago),
         CONSTRAINT FK_UniFunc_Pago FOREIGN KEY (id_uni_func) REFERENCES adm.UnidadFuncional(id_uni_func)

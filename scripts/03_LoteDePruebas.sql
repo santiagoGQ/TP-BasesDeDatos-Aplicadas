@@ -345,8 +345,6 @@ BEGIN
                 @cbu_cvu = cbu
             FROM @ufs
             WHERE fila = @i
-            
-            --TODO: Validación del cbu (no se si es necesaria)
 
             --Declaración de fecha
             DECLARE @mes_formateado INT = MONTH(adm.ObtenerPrimerDiaDelMes(@mes))
@@ -364,6 +362,14 @@ BEGIN
             SET @i += 1
         END
 
+        --Generación de datos para pago no asociado
+        SET @cbu_cvu = RIGHT(CONCAT('213741512000000000000', @i), 22)
+        SET @fecha = DATEADD(DAY,2,@fecha)
+
+        --Agregado de pago no asociado
+        EXEC fin.AgregarPago
+            NULL, @fecha, @cbu_cvu, @monto
+
         COMMIT TRANSACTION
 
     END TRY
@@ -373,7 +379,6 @@ BEGIN
         RETURN  
     END CATCH
 
---TODO: Faltaría ver como hacer con los pagos no asociados
 END
 GO
 
