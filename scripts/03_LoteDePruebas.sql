@@ -16,7 +16,8 @@ GO
 -- Generando a su vez prop e inq y asignandoles UF
 CREATE OR ALTER PROCEDURE test.GeneraConsorcioPersonasUF
     @tieneBaulera BIT, 
-    @tieneCochera BIT
+    @tieneCochera BIT,
+    @id_consorcio INT OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -40,8 +41,7 @@ BEGIN
         @cantidad_departamentos TINYINT = 12,
         @precio_baulera DECIMAL(10,2) = 5000.00,
         @precio_cochera DECIMAL(10,2) = 10000.00,
-        @id_tipo_limpieza INT = 1,
-        @id_consorcio INT;
+        @id_tipo_limpieza INT = 1
 
     BEGIN TRY
         SET @numeroConsorcio = (SELECT ISNULL(MAX(id_consorcio),0) + 1 FROM adm.Consorcio);
@@ -160,7 +160,7 @@ BEGIN
 
         SET @i += 1;
     END;
-
+    RETURN @id_consorcio
     PRINT 'Consorcio ' + @nombre + ' generado correctamente con sus unidades funcionales, propietarios e inquilinos.';
 END;
 GO
@@ -356,37 +356,3 @@ BEGIN
 
 END
 GO
-
-/*
--- Generar un consorcio con baulera y cochera
- exec test.GeneraConsorcioPersonasUF 1, 1
-
--- Gastos para el mes de marzo
- exec test.GeneraExpensaProveedorGastos 1, 'marzo', 1
-
--- Generar la expensa de Marzo 2025. 
- exec fin.GenerarExpensa '2025', '3', 'Consorcio_1'
-
--- Generar pagos para la expensa de marzo (entran en Abril)
- exec test.GenerarPagos 1, 'abril'
-
--- Gastos para el mes de Abril
- exec test.GeneraExpensaProveedorGastos 1, 'abril', 1
-
--- Generar la expensa de Abril 2025. 
- exec fin.GenerarExpensa '2025', '4', 'Consorcio_1'
-
--- Generar pagos para la expensa de Abril (entran en Mayo)
- exec test.GenerarPagos 1, 'mayo'
-
--- Gastos para el mes de Mayo
- exec test.GeneraExpensaProveedorGastos 1, 'mayo', 1
-
--- Generar la expensa de Mayo 2025. 
- exec fin.GenerarExpensa '2025', '5', 'Consorcio_1'
-
- exec fin.AgregarEstadoFinanciero 1, 1
- exec fin.AgregarEstadoFinanciero 2, 1
- exec fin.AgregarEstadoFinanciero 3, 1
- */
--- TRUNCATE TABLE fin.EstadoFinanciero

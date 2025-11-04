@@ -121,7 +121,7 @@ BEGIN
 
     SET @nombreMes = LTRIM(RTRIM(LOWER(@nombreMes)));
 
-    -- Convertimos el nombre del mes a n�mero
+    -- Convertimos el nombre del mes a numero
     SET @mes = CASE @nombreMes
         WHEN 'enero' THEN 1
         WHEN 'febrero' THEN 2

@@ -311,10 +311,13 @@ BEGIN
             @cbu = cvu_cbu
         FROM #InqPropsTemp
 
-        IF @inquilino = 1
-            EXEC adm.AgregarInquilino @nombre, @apellido, @dni, @email, @telefono, @cbu;
-        ELSE
-            EXEC adm.AgregarPropietario @nombre, @apellido, @dni, @email, @telefono, @cbu;
+        IF @nombre IS NOT NULL
+        BEGIN
+            IF @inquilino = 1
+                EXEC adm.AgregarInquilino @nombre, @apellido, @dni, @email, @telefono, @cbu;
+            ELSE
+                EXEC adm.AgregarPropietario @nombre, @apellido, @dni, @email, @telefono, @cbu;
+        END
         DELETE TOP (1) FROM #InqPropsTemp;
         SET @id += 1;
     END
@@ -552,12 +555,14 @@ BEGIN
             @valor = valor
         FROM #PagosTemp
 
-        SET @fecha = CONVERT(DATE, @fecha_cruda, 103);
-        SET @id_unidad = (SELECT id_uni_func FROM adm.UnidadFuncional where cbu = @cbu_cvu)
-        SET @importe = fin.FormatearPago(@valor)
+        IF @fecha_cruda IS NOT NULL
+        BEGIN
+            SET @fecha = CONVERT(DATE, @fecha_cruda, 103);
+            SET @id_unidad = (SELECT id_uni_func FROM adm.UnidadFuncional where cbu = @cbu_cvu)
+            SET @importe = fin.FormatearPago(@valor)
+            EXEC fin.AgregarPago @id_unidad, @fecha, @cbu_cvu, @importe
+        END
 
-        EXEC fin.AgregarPago @id_unidad, @fecha, @cbu_cvu, @importe
-        
         DELETE TOP (1) FROM #PagosTemp;
         SET @id += 1;
     END
@@ -670,6 +675,9 @@ BEGIN
 
             SET @i += 1;
         END
+
+        exec fin.AgregarEstadoFinanciero @id_expensa, @id_consorcio
+
         COMMIT
     END TRY
     BEGIN CATCH
@@ -680,7 +688,6 @@ BEGIN
 END
 
 /*
-Para probar
 
 adm.AgregarTipoServicioLimpieza 'Limpieza test'
 exec adm.ImportarConsorcios N'C:\Temp\datos varios.xlsx', N'C:\Temp\UF por consorcio.txt'
@@ -693,15 +700,20 @@ exec fin.GenerarExpensa '2025', '3', 'Azcuenaga'
 exec fin.GenerarExpensa '2025', '4', 'Azcuenaga'
 exec fin.GenerarExpensa '2025', '5', 'Azcuenaga'
 
+exec fin.GenerarExpensa '2025', '3', 'Alzaga'
+exec fin.GenerarExpensa '2025', '4', 'Alzaga'
+exec fin.GenerarExpensa '2025', '5', 'Alzaga'
+
 exec fin.GenerarExpensa '2025', '3', 'Alberdi'
 exec fin.GenerarExpensa '2025', '4', 'Alberdi'
 exec fin.GenerarExpensa '2025', '5', 'Alberdi'
 
-exec fin.AgregarEstadoFinanciero 4, 2
-exec fin.AgregarEstadoFinanciero 5, 2
-exec fin.AgregarEstadoFinanciero 6, 2
+exec fin.GenerarExpensa '2025', '3', 'Unzue'
+exec fin.GenerarExpensa '2025', '4', 'Unzue'
+exec fin.GenerarExpensa '2025', '5', 'Unzue'
 
-
-TRUNCATE TABLE fin.EstadoDeCuenta
+exec fin.GenerarExpensa '2025', '3', 'Pereyra Iraola'
+exec fin.GenerarExpensa '2025', '4', 'Pereyra Iraola'
+exec fin.GenerarExpensa '2025', '5', 'Pereyra Iraola'
 
 */
