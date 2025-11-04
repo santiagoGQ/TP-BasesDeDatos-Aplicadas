@@ -6,6 +6,8 @@
 --   GARAY QUINTERO, SANTIAGO
 --   SIMCIC, TOBIAS
 --------------------------------------------------
+-- Este archivo es el encargado de crear las funciones que van a ser utilizadas para
+-- formatear datos de entrada. Principalmente de los archivos importados.
 
 -------------CREACION DE LAS FUNCIONES------------
 
@@ -25,9 +27,9 @@ BEGIN
     -- Elimina espacios intermedios
     SET @resultado = REPLACE(@resultado, ' ', '')
     -- Corregimos si hay algun error de caracteres
-    SET @resultado = REPLACE(@resultado, '¥', 'ñ');
-    SET @resultado = REPLACE(@resultado, '¡', 'i');
-    SET @resultado = REPLACE(@resultado, '‚', 'e');
+    SET @resultado = REPLACE(@resultado, 'ï¿½', 'ï¿½');
+    SET @resultado = REPLACE(@resultado, 'ï¿½', 'i');
+    SET @resultado = REPLACE(@resultado, 'ï¿½', 'e');
     -- Convertimos todo a minusculas
     SET @resultado = LOWER(@resultado)
 
@@ -45,9 +47,9 @@ BEGIN
     DECLARE @resultado NVARCHAR(30) = LTRIM(RTRIM(@cadena))
     
     -- Corregimos si hay algun error de caracteres.
-    SET @resultado = REPLACE(@resultado, '¥', 'Ñ');
-    SET @resultado = REPLACE(@resultado, '¡', 'Í');
-    SET @resultado = REPLACE(@resultado, '‚', 'é');
+    SET @resultado = REPLACE(@resultado, 'ï¿½', 'ï¿½');
+    SET @resultado = REPLACE(@resultado, 'ï¿½', 'ï¿½');
+    SET @resultado = REPLACE(@resultado, 'ï¿½', 'ï¿½');
 
     -- Hacemos todas las letras mayusculas
     SET @resultado = UPPER(@resultado)
@@ -119,7 +121,7 @@ BEGIN
 
     SET @nombreMes = LTRIM(RTRIM(LOWER(@nombreMes)));
 
-    -- Convertimos el nombre del mes a número
+    -- Convertimos el nombre del mes a nï¿½mero
     SET @mes = CASE @nombreMes
         WHEN 'enero' THEN 1
         WHEN 'febrero' THEN 2

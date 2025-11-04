@@ -6,13 +6,14 @@
 --   GARAY QUINTERO, SANTIAGO
 --   SIMCIC, TOBIAS
 --------------------------------------------------
+-- Este archivo crea los Store Procedures que generan los datos para las pruebas.
 
 --Cambia a COM2900_G04
 USE COM2900_G04
 GO
 
---Genera un consorcio de prueba con parametros deseados
---Generando a su vez prop e inq y asignandoles UF
+-- Genera un consorcio de prueba con parametros deseados
+-- Generando a su vez prop e inq y asignandoles UF
 CREATE OR ALTER PROCEDURE test.GeneraConsorcioPersonasUF
     @tieneBaulera BIT, 
     @tieneCochera BIT
@@ -20,7 +21,6 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- Validacion de parametros
     IF @tieneBaulera NOT IN (0,1) OR @tieneCochera NOT IN (0,1)
     BEGIN
         RAISERROR('Error en la entrada de datos.', 16, 1);
@@ -31,9 +31,7 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM adm.TipoServicioLimpieza)
         INSERT INTO adm.TipoServicioLimpieza(nombre) VALUES ('Empresa de limpieza');
 
-    ----------------------------------------------------------
-    -- 1. Crear consorcio base
-    ----------------------------------------------------------
+    -- Crear consorcio
     DECLARE
         @numeroConsorcio TINYINT,
         @nombre NVARCHAR(15),
@@ -69,9 +67,7 @@ BEGIN
         RETURN;
     END CATCH;
 
-    ----------------------------------------------------------
-    -- 2. Crear propietarios, inquilinos y unidades funcionales
-    ----------------------------------------------------------
+    -- Crear propietarios, inquilinos y unidades funcionales
     DECLARE 
         @i INT = 1,
         @id_prop INT,
@@ -91,9 +87,7 @@ BEGIN
 
     WHILE @i <= @cantidad_departamentos
     BEGIN
-        ------------------------------------------------------
         -- Determinar piso y m2 según el número de depto
-        ------------------------------------------------------
         IF @i BETWEEN 1 AND 4
         BEGIN
             SET @total_m2 = 40;
@@ -113,14 +107,10 @@ BEGIN
             SET @coef = 11.11;
         END;
 
-        ------------------------------------------------------
         -- Asignar depto A/B/C/D en ciclo
-        ------------------------------------------------------
         SET @depto = CHAR(64 + ((@i - 1) % 4) + 1); -- 1=A, 2=B, 3=C, 4=D
 
-        ------------------------------------------------------
         -- Generar propietario
-        ------------------------------------------------------
         SET @nombrePers = 'Prop_' + CAST(@i AS NVARCHAR(5));
         SET @apellido   = 'Apellido' + CAST(@i AS NVARCHAR(5));
         SET @dni        = 40000000 + @i;
@@ -133,9 +123,7 @@ BEGIN
 
         SET @id_prop = IDENT_CURRENT('adm.Propietario');
 
-        ------------------------------------------------------
         -- Generar inquilino solo si i es par
-        ------------------------------------------------------
         IF (@i % 2 = 0)
         BEGIN
             SET @nombrePers = 'Inq_' + CAST(@i AS NVARCHAR(5));
@@ -153,9 +141,7 @@ BEGIN
         ELSE
             SET @id_inq = NULL;
 
-        ------------------------------------------------------
         -- Generar valores de baulera y cochera
-        ------------------------------------------------------
         IF @tieneBaulera = 1
             SET @baulera_m2 = CAST(FLOOR(RAND() * 6) as TINYINT); -- entre 0 y 5
         ELSE
@@ -166,9 +152,7 @@ BEGIN
         ELSE
             SET @cochera_m2 = 0;
 
-        ------------------------------------------------------
         -- Crear la Unidad Funcional
-        ------------------------------------------------------
         INSERT INTO adm.UnidadFuncional
             (id_consorcio, id_inq, id_prop, total_m2, piso, depto, coeficiente, cbu, baulera_m2, cochera_m2)
         VALUES
@@ -190,7 +174,6 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    --Declaración de variables para la expensa
     DECLARE
         @fecha DATETIME,
         @id_expensa INT,
@@ -200,7 +183,6 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        --Validación de consorcio
         IF NOT EXISTS (SELECT 1 FROM adm.Consorcio WHERE id_consorcio = @id_consorcio)
         BEGIN
             RAISERROR('No existe el consorcio con esa id.',16,1)
@@ -208,7 +190,6 @@ BEGIN
             RETURN
         END
 
-        --Validación de gasto_extraordinario
         IF @gasto_extraordinario IS NULL
         BEGIN
             RAISERROR('Elija 1 o 0, si quiere o no gasto extraordinario',16,1)
@@ -303,7 +284,6 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    --Declaración de variables para los pagos
     DECLARE
         @id_uni_func INT,
         @fecha DATETIME,
@@ -315,7 +295,6 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION
 
-        --Validación de consorcio
         IF NOT EXISTS (SELECT 1 FROM adm.Consorcio WHERE id_consorcio = @id_consorcio)
         BEGIN
             RAISERROR('No existe consorcio con esa id.', 16, 1)
@@ -330,7 +309,7 @@ BEGIN
             cbu CHAR(22)
         )
 
-        --Inserción de valores a la tabla temporal
+        --Insercion de valores a la tabla temporal
         INSERT INTO @ufs (id_uni_func, cbu)
         SELECT id_uni_func, cbu
         FROM adm.UnidadFuncional
@@ -347,15 +326,11 @@ BEGIN
             FROM @ufs
             WHERE fila = @i
 
-            --Declaración de fecha
             DECLARE @mes_formateado INT = MONTH(adm.ObtenerPrimerDiaDelMes(@mes))
-            --Cambio si el mes es Diciembre para que no quede un mes 13
-            
             SET @fecha = DATEFROMPARTS(2025, @mes_formateado, (@i % 10) + 1)
            
             SET @monto = (@i % 4) * 10000 + 120000
 
-            --Agregado del pago a la tabla
             EXEC fin.AgregarPago
                 @id_uni_func, @fecha, @cbu_cvu, @monto
 
@@ -382,33 +357,34 @@ BEGIN
 END
 GO
 
+/*
 -- Generar un consorcio con baulera y cochera
--- exec test.GeneraConsorcioPersonasUF 1, 1
+ exec test.GeneraConsorcioPersonasUF 1, 1
 
 -- Gastos para el mes de marzo
--- exec test.GeneraExpensaProveedorGastos 1, 'marzo', 1
+ exec test.GeneraExpensaProveedorGastos 1, 'marzo', 1
 
 -- Generar la expensa de Marzo 2025. 
--- exec fin.GenerarExpensa '2025', '3', 'Consorcio_1'
+ exec fin.GenerarExpensa '2025', '3', 'Consorcio_1'
 
 -- Generar pagos para la expensa de marzo (entran en Abril)
--- exec test.GenerarPagos 1, 'abril'
+ exec test.GenerarPagos 1, 'abril'
 
 -- Gastos para el mes de Abril
--- exec test.GeneraExpensaProveedorGastos 1, 'abril', 1
+ exec test.GeneraExpensaProveedorGastos 1, 'abril', 1
 
 -- Generar la expensa de Abril 2025. 
--- exec fin.GenerarExpensa '2025', '4', 'Consorcio_1'
+ exec fin.GenerarExpensa '2025', '4', 'Consorcio_1'
 
 -- Generar pagos para la expensa de Abril (entran en Mayo)
--- exec test.GenerarPagos 1, 'mayo'
+ exec test.GenerarPagos 1, 'mayo'
 
 -- Gastos para el mes de Mayo
--- exec test.GeneraExpensaProveedorGastos 1, 'mayo', 1
+ exec test.GeneraExpensaProveedorGastos 1, 'mayo', 1
 
 -- Generar la expensa de Mayo 2025. 
--- exec fin.GenerarExpensa '2025', '5', 'Consorcio_1'
-/*
+ exec fin.GenerarExpensa '2025', '5', 'Consorcio_1'
+
  exec fin.AgregarEstadoFinanciero 1, 1
  exec fin.AgregarEstadoFinanciero 2, 1
  exec fin.AgregarEstadoFinanciero 3, 1

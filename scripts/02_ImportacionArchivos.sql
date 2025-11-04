@@ -6,15 +6,17 @@
 --   GARAY QUINTERO, SANTIAGO
 --   SIMCIC, TOBIAS
 --------------------------------------------------
-
----------CREACION DE LOS STORE PROCEDURES---------
+-- Este archivo incluye todos los Store Procedure necesarios para poder importar los archivos
+-- que nos han sido concedidos por la catedra. Cada SP recibe un parametro con una ruta.
+-- Asegurarse que el servicio de SQLEXPRESS tenga acceso de lectura al File System de Windows.
 
 --Cambia a COM2900_G04
 USE COM2900_G04
 GO
--- TODO: Agregar transacciones para que se atomico
+
 CREATE OR ALTER PROCEDURE adm.ImportarConsorcios
-    @ruta_archivo NVARCHAR(255)
+    @ruta_archivo_consorcios NVARCHAR(255),
+    @ruta_archivo_uf NVARCHAR(255)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -29,7 +31,7 @@ BEGIN
 
     DECLARE @sql NVARCHAR(MAX);
 
-    -- Armo la consulta dinámica para importar desde Excel
+    -- Importamos el excel
     SET @sql = N'
         INSERT INTO #ConsorciosTemp (nombreConsorcio, domicilio, cantUnidadesFuncionales, m2Totales)
         SELECT
@@ -39,16 +41,12 @@ BEGIN
             [m2 totales]
         FROM OPENROWSET(
             ''Microsoft.ACE.OLEDB.12.0'',
-            ''Excel 12.0;HDR=YES;Database=' + @ruta_archivo + N''',
+            ''Excel 12.0;HDR=YES;Database=' + @ruta_archivo_consorcios + N''',
             ''SELECT * FROM [Consorcios$]''
         );
     ';
 
     EXEC sp_executesql @sql;
-
-    --------------------------------------------------------
-    -- Recorremos las filas
-    --------------------------------------------------------
 
     DECLARE 
         @id INT,
@@ -75,7 +73,8 @@ BEGIN
                 @nombreConsorcio,
                 @domicilio,
                 @m2Totales,
-                @cantUnidadesFuncionales
+                @cantUnidadesFuncionales,
+                @ruta_archivo_uf
                 
         END
         DELETE FROM #ConsorciosTemp WHERE id = @id;
@@ -88,31 +87,22 @@ CREATE OR ALTER PROCEDURE adm.AgregarConsorcioImportado
     @nombre VARCHAR(25),
     @direccion VARCHAR(75),
     @metros_totales INT,
-    @cantidad_uf INT
+    @cantidad_uf INT,
+    @ruta_archivo_uf NVARCHAR(255)
 AS
 BEGIN
     SET NOCOUNT ON;
 
     DECLARE @id_consorcio INT;
-    DECLARE @ruta_txt NVARCHAR(255);
 
-    -- Ruta al archivo TXT (ajustar según tu entorno)
-    -- Ejemplo: C:\Importaciones\Consorcios.txt
-    SET @ruta_txt = N'C:\Temp\UF por consorcio.txt';
-
-    
-    ------------------------------------------------------------
-    -- 1. Insertar consorcio y obtener su ID
-    ------------------------------------------------------------
+    -- Agregar consorcio y obtener su ID
     INSERT INTO adm.Consorcio (nombre, direccion, metros_totales, cantidad_uf, id_tipo_serv_limpieza,
         precio_bauleraM2, precio_cocheraM2)
     VALUES (@nombre, @direccion, @metros_totales, @cantidad_uf, 1, 2000.0, 5000.0); -- TODO: Agregar bien el tipo de servicio de limpieza
         
     SET @id_consorcio = SCOPE_IDENTITY();
 
-    ------------------------------------------------------------
-    -- 2. Crear tabla temporal para las unidades funcionales
-    ------------------------------------------------------------
+    -- Crear tabla temporal para las unidades funcionales
     CREATE TABLE #UFsTemp (
         nombreConsorcio NVARCHAR(100),
         nroUnidadFuncional NVARCHAR(10),
@@ -126,13 +116,11 @@ BEGIN
         m2_cochera NVARCHAR(10)
     );
 
-    ------------------------------------------------------------
-    -- 3. Importar desde el TXT (CSV separado por tabulaciones)
-    ------------------------------------------------------------
+    -- Importar las unidades funcionales
     DECLARE @sql NVARCHAR(MAX);
     SET @sql = N'
         BULK INSERT #UFsTemp
-        FROM ''' + @ruta_txt + N'''
+        FROM ''' + @ruta_archivo_uf + N'''
         WITH (
             FIRSTROW = 2,
             FIELDTERMINATOR = ''\t'',
@@ -143,9 +131,7 @@ BEGIN
     ';
     EXEC sp_executesql @sql;
 
-    ------------------------------------------------------------
-    -- 4. Insertar las UFs del consorcio actual
-    ------------------------------------------------------------
+    -- Insertar las UFs del consorcio actual
     INSERT INTO adm.UnidadFuncional (
         id_consorcio,
         piso,
@@ -170,17 +156,12 @@ BEGIN
 END;
 GO
 
---exec adm.ImportarConsorcios N'C:\Temp\datos varios.xlsx'
-
 CREATE OR ALTER PROCEDURE adm.ImportarProveedores ---- Todo: implementar mensaje de error si el consorcio no existe sin dropear toda la ejecucion
     @ruta_archivo NVARCHAR(255)
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    ------------------------------------------------------------
-    -- 1. Tabla temporal para importar los datos del Excel
-    ------------------------------------------------------------
     CREATE TABLE #ProveedoresTemp (
         tipo_de_gasto VARCHAR(25) COLLATE Latin1_General_CI_AS,
         razon_social VARCHAR(100) COLLATE Latin1_General_CI_AS,
@@ -188,9 +169,7 @@ BEGIN
         consorcio VARCHAR(25) COLLATE Latin1_General_CI_AS
     )
 
-    ------------------------------------------------------------
-    -- 2. Importar los datos desde Excel (hoja 'Proveedores')
-    ------------------------------------------------------------
+    -- Importamos el excel de proveedores
     DECLARE @sql NVARCHAR(MAX);
     SET @sql = N'
         INSERT INTO #ProveedoresTemp (tipo_de_gasto, razon_social, cuenta, consorcio)
@@ -207,9 +186,7 @@ BEGIN
     ';
     EXEC sp_executesql @sql;
 
-    ------------------------------------------------------------
-    -- 3. Limpiar y preparar los datos antes del merge
-    ------------------------------------------------------------
+    -- Limpiamos datos
         SELECT 
             tipo_de_gasto,
             -- Si es limpieza y la razon_social = 'Serv. Limpieza', usar detalle como razon_social
@@ -232,9 +209,7 @@ BEGIN
         INTO #DatosLimpios
         FROM #ProveedoresTemp
 
-    ------------------------------------------------------------
-    -- 4. MERGE: Insertar o actualizar en adm.Proveedor
-    ------------------------------------------------------------
+    -- Insertar o actualizar en adm.Proveedor
     MERGE adm.Proveedor AS destino
        USING (
            SELECT 
@@ -244,7 +219,7 @@ BEGIN
                d.cuenta_final
            FROM #DatosLimpios d
            INNER JOIN adm.Consorcio c ON c.nombre = d.consorcio
-           WHERE d.tipo_de_gasto NOT LIKE '%LIMPIEZA%' -- por ahora ignoramos limpieza
+           WHERE d.tipo_de_gasto NOT LIKE '%LIMPIEZA%' -- ignoramos limpieza
        ) AS origen
        ON destino.id_consorcio = origen.id_consorcio
           AND destino.motivo = origen.tipo_de_gasto
@@ -261,9 +236,7 @@ BEGIN
                origen.cuenta_final
            );
 
-    ------------------------------------------------------------
-    -- 5. Inserción específica para los de limpieza
-    ------------------------------------------------------------
+    -- Insertamos limpieza a mano
     INSERT INTO adm.Proveedor (razon_social, motivo, id_consorcio, cuenta)
     SELECT 
         d.razon_social_final,
@@ -281,7 +254,6 @@ BEGIN
               AND p.razon_social = d.razon_social_final
         );
 
-    ------------------------------------------------------------
     DROP TABLE #ProveedoresTemp;
     DROP TABLE #DatosLimpios;
 END;
@@ -536,7 +508,7 @@ BEGIN
 END
 GO
 
-CREATE OR ALTER PROCEDURE fin.ImportarPagos -- TODO: Tecnicamente cada import agrega toda la info. No busca duplicados, creo que no habria duplicados de este archivo.... no sé.
+CREATE OR ALTER PROCEDURE fin.ImportarPagos
     @ruta_archivo NVARCHAR(255)
 AS
 BEGIN
@@ -602,7 +574,6 @@ CREATE OR ALTER PROCEDURE fin.GenerarExpensa
 AS
 BEGIN
     SET NOCOUNT ON;
-
 
     DECLARE @id_consorcio INT = (SELECT id_consorcio FROM adm.Consorcio where nombre = @nombre_consorcio) 
     DECLARE @id_expensa INT, 
@@ -699,10 +670,6 @@ BEGIN
 
             SET @i += 1;
         END
-        -- Saldo anterior IF no existe expensa anterior, saldoAnt= 0. ELSE expensa_anterior.saldoAlCierre
-        -- Ingresos por pagos en termino. SUM(
-        -- egresos: usar la vista que arme
-        -- saldo al cierre: total ingresos - egresos
         COMMIT
     END TRY
     BEGIN CATCH
@@ -711,11 +678,12 @@ BEGIN
 		PRINT 'Mensaje: ' + ERROR_MESSAGE();
 	END CATCH
 END
+
 /*
 Para probar
 
 adm.AgregarTipoServicioLimpieza 'Limpieza test'
-exec adm.ImportarConsorcios N'C:\Temp\datos varios.xlsx'
+exec adm.ImportarConsorcios N'C:\Temp\datos varios.xlsx', N'C:\Temp\UF por consorcio.txt'
 exec adm.ImportarProveedores N'C:\Temp\datos varios.xlsx'
 exec adm.ImportarInquilinoYPropietarios N'C:\Temp\Inquilino-propietarios-datos.csv'
 exec adm.ImportarRelacionEntreUFyPropInq N'C:\Temp\Inquilino-propietarios-UF.csv'

@@ -6,6 +6,8 @@
 --   GARAY QUINTERO, SANTIAGO
 --   SIMCIC, TOBIAS
 --------------------------------------------------
+-- Este archivo crea las vistas necesarias para poder visualizar los gastos por expensas y evitar hacer muchos joins
+-- en una sola linea.
 
 --Cambia a COM2900_G04
 USE COM2900_G04
@@ -28,7 +30,7 @@ FROM (
         e.fechaPrimerVenc AS fecha_primer_vencimiento,
         e.fechaSegVenc AS fecha_segundo_vencimiento,
 
-        -- Año y mes separados
+        -- Anio y mes separados
         YEAR(e.fechaGenerado) AS anio,
         MONTH(e.fechaGenerado) AS mes,
 

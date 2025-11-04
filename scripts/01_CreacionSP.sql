@@ -7,7 +7,9 @@
 --   SIMCIC, TOBIAS
 --------------------------------------------------
 
----------CREACION DE LOS STORE PROCEDURES---------
+-- Este archivo crea la mayoria de los Store Procedures que se usarán en el sistema.
+-- Todos los SP que agregan datos, tambien modifican en caso de que se le permita a la tabla.
+-- Ejemplo: aceptamos modificaciones de datos de adm.UnidadFuncional, pero no de la tabla fin.Pago
 
 --Cambia a COM2900_G04
 USE COM2900_G04
@@ -30,8 +32,6 @@ BEGIN
 	INSERT INTO adm.TipoServicioPublico(nombre) values (@nombre)
 END
 GO
-
--- Falta SP nuevo de agregar proveedor
 
 CREATE OR ALTER PROCEDURE adm.AgregarPropietario
 	@nombre NVARCHAR(30),
@@ -62,7 +62,7 @@ BEGIN
 	END TRY
 
 	BEGIN CATCH
-		PRINT 'Ocurri� un error al agregar un propietario.';
+		PRINT 'Ocurrio un error al agregar un propietario.';
 		PRINT 'Mensaje: ' + ERROR_MESSAGE();
 	END CATCH
 END
@@ -96,7 +96,7 @@ BEGIN
 			VALUES(@nombre_formateado, @apellido_formateado, @dni, @email_formateado, @telefono, @cbu)
 	END TRY
 	BEGIN CATCH
-		PRINT 'Ocurri� un error al agregar un inquilino.';
+		PRINT 'Ocurrio un error al agregar un inquilino.';
 		PRINT 'Mensaje: ' + ERROR_MESSAGE();
 	END CATCH
 END
@@ -144,46 +144,6 @@ BEGIN
 		ROLLBACK
 		PRINT 'Ocurrio un error al generar el consorcio.';
 		PRINT 'Mensaje: ' + ERROR_MESSAGE();
-	END CATCH
-END
-GO
-
-CREATE OR ALTER PROCEDURE adm.AgregarUnidadFuncional
-	@id_inq INT,
-	@id_prop INT,
-	@id_consorcio INT,
-	@total_m2 SMALLINT,
-	@depto VARCHAR(4),
-	@cbu CHAR(22),
-	@baulera_m2 TINYINT,
-	@cochera_m2 TINYINT
-AS
-BEGIN
-	BEGIN TRY
-		--validar existencia de consorcio
-		IF NOT EXISTS (SELECT 1 FROM adm.Consorcio WHERE id_consorcio=@id_consorcio)
-		BEGIN
-			RAISERROR('No existe consorcio con ese id.',16,1)
-			RETURN
-		END
-		--validar existencia de propietario
-		IF NOT EXISTS (SELECT 1 FROM adm.Propietario WHERE id_prop=@id_prop)
-		BEGIN
-			RAISERROR('No existe propietario con ese id.',16,1)
-			RETURN
-		END
-		--validar existencia de inquilino
-		IF NOT EXISTS (SELECT 1 FROM adm.Inquilino WHERE id_inq=@id_inq)
-		BEGIN
-			RAISERROR('No existe inquilino con ese id',16,1)
-			RETURN
-		END
-
-		INSERT INTO adm.UnidadFuncional (id_consorcio,id_inq,id_prop,total_m2,depto,cbu,baulera_m2,cochera_m2)
-			VALUES (@id_consorcio,@id_inq,@id_prop,@total_m2,@depto,@cbu,@baulera_m2,@cochera_m2)
-	END TRY
-	BEGIN CATCH
-		PRINT('Error al agregar la unidad funcional: ' + ERROR_MESSAGE())
 	END CATCH
 END
 GO
@@ -253,10 +213,10 @@ BEGIN
             RETURN
         END
 
-		--Validar que razon social no est� vac�o
+		--Validar que razon social no esta vacio
 		IF LEN(LTRIM(RTRIM(@razon_social))) = 0
         BEGIN
-            RAISERROR('La raz�n social no puede estar vac�a.', 16, 1)
+            RAISERROR('La razon social no puede estar vacia.', 16, 1)
             RETURN
         END
 
@@ -270,7 +230,7 @@ BEGIN
               AND id_consorcio = @id_consorcio
         )
         BEGIN
-            RAISERROR('Ya existe un proveedor con esa raz�n social para este consorcio.', 16, 1);
+            RAISERROR('Ya existe un proveedor con esa razon social para este consorcio.', 16, 1);
             RETURN
         END
 
@@ -316,8 +276,6 @@ END
 GO
 
 -------------- GASTO --------------
--- TODO: Creo que se puede hacer con SQL Dinamico toda esta parte. El SP es el mismo, solo cambia 
---		 el nombre de la tabla. Salvo el gasto de limpieza y el extraordinario
 
 CREATE OR ALTER PROCEDURE gasto.AgregarGastoAdministracion
 	@id_consorcio INT,
@@ -365,7 +323,6 @@ BEGIN
 END
 GO
 
--- TODO: Revisar este SP
 CREATE OR ALTER PROCEDURE gasto.AgregarGastoExtraordinario
 	@id_expensa INT,
 	@importe DECIMAL(10,2),
@@ -488,14 +445,13 @@ CREATE OR ALTER PROCEDURE fin.AgregarPago
 	@monto DECIMAL(10,2)
 AS
 BEGIN
-	--Creaci�n de variable asociado
 	DECLARE @asociado BIT = 0
 
-	--Validaci�n de duplicado
+	--Validacion de duplicado
 	IF NOT EXISTS (SELECT 1 FROM fin.Pago 
 					WHERE ISNULL(id_uni_func,-1) = ISNULL(@id_uni_func,-1) AND fecha = @fecha AND ISNULL(cbu_cvu,-1) = ISNULL(@cuenta_origen,-1))
 	BEGIN
-		--Validaci�n de cbu, si se encuentra pago asociado, caso contrario pago no asociado
+		--Validacion de cbu, si se encuentra pago asociado, caso contrario pago no asociado
 		IF EXISTS (SELECT 1 FROM adm.UnidadFuncional WHERE cbu = @cuenta_origen)
 			SET @asociado = 1
 
@@ -504,10 +460,6 @@ BEGIN
 	END
 END
 GO
-
--- Generar Estado Financiero
--- Leer Resumen Bancario
--- Generar Estado de Cuenta
 
 CREATE OR ALTER PROCEDURE fin.AgregarFactura
     @id_proveedor INT,
@@ -562,7 +514,7 @@ BEGIN
 		  AND e.id_expensa < @id_expensa
 		ORDER BY e.fechaGenerado DESC;
 
-		IF @id_expensa_anterior IS NULL
+		IF @id_expensa_anterior IS NULL -- Si es la primera expensa del consorcio..
 		BEGIN
 			SET @saldo_anterior = 0
 			SET @ing_en_termino = 0
@@ -583,9 +535,8 @@ BEGIN
 			SET @gastos_baulera = (SELECT SUM(baulera) from fin.EstadoDeCuenta where id_expensa = @id_expensa)
 			SET @egresos = @gastos_baulera + @gastos_cochera + (SELECT total_gastado from Vista_GastosPorExpensa where id_expensa = @id_expensa)
 			SET @saldo_anterior = (SELECT saldo_cierre from fin.EstadoFinanciero where id_expensa = @id_expensa_anterior)
-			--revisar este calculo de abajo. Falta setear @saldo_anterior
 			SET @saldo_al_cierre = @saldo_anterior - (@ing_exp_adeudadas + @ing_en_termino + @ing_adelantado ) + @egresos
-			PRINT(@ing_adelantado)
+
 			INSERT INTO fin.EstadoFinanciero (id_expensa, saldo_anterior, ing_en_termino, ing_exp_adeudadas, ing_adelantado, egresos, saldo_cierre)
 			VALUES (@id_expensa, @saldo_anterior, @ing_en_termino, @ing_exp_adeudadas, @ing_adelantado, @egresos, @saldo_al_cierre)
 		END
@@ -620,11 +571,14 @@ BEGIN
             RAISERROR('Ya existe un Estado de Cuenta para esta combinacion de Expensa y UF.', 16, 1)
             RETURN
         END
+		
 		-- TODO: Si estoy en Enero esto rompe. 
 		DECLARE @id_expensa_anterior INT = (SELECT id_expensa from fin.Vista_GastosPorExpensa 
 												where id_consorcio = @id_consorcio AND mes = (@mes-1) AND anio = @anio)
+		
 		-- Ayuda para multiplicar valores
 		DECLARE @multiplicador DECIMAL(4,2) = @prorateo / 100
+
 		DECLARE @fecha_expensa_generada DATE,
 				@fecha_primer_venc DATE,
 				@fecha_segundo_venc DATE,
@@ -642,12 +596,6 @@ BEGIN
 			SET @fecha_primer_venc = (SELECT fechaPrimerVenc from adm.Expensa where id_expensa= @id_expensa_anterior)
 			SET @fecha_segundo_venc = (SELECT fechaSegVenc from adm.Expensa where id_expensa= @id_expensa_anterior)
 			
-			-- TODO: Cambiar como se calcula el monto pagado. Deberiamos fijarnos cuanto ingreso antes del primer vencimiento
-			-- con esa info nos fijamos si ya no tiene que pagar mas nada. Si ya tiene el saldo en <=0 , leemos todo el resto de
-			-- pagos que haya hecho durante el mes (seria ultimo dia del mes - 1 para que no colisione con la fecha de generacion
-			-- del siguiente mes), y le sumamos a monto pagado. De esa forma sabemos en que momento pago y si adeuda. De la forma
-			-- en la que esta codeado ahora, si el tipo pago todo pero hizo una transferencia a mitad de mes, le cobra una deuda
-			-- cuando en realidad ya la podia tener saldada.
 			SET @monto_pagado = (SELECT SUM(monto) from fin.Pago 
 									WHERE id_uni_func = @id_uni_func AND
 										fecha >= @fecha_expensa_generada AND fecha <= DATEADD(DAY, 10, @fecha_segundo_venc))
@@ -673,7 +621,7 @@ BEGIN
 			SET @interes_mora = 0
 		END
 		
-		-- Total extraordinarias es TotalDeTodos - ordinarias.
+		-- Total extraordinarias es TotalDeTodo - ordinarias.
 		DECLARE @expensas_extraordinarias DECIMAL(10,2) = @total_expensa - @total_expensa_ordinarios
 		DECLARE @total_a_pagar DECIMAL (10,2)= (@total_expensa * @multiplicador) + @deuda + ISNULL(@interes_mora, 0) + @cochera + @baulera
 
@@ -706,7 +654,7 @@ BEGIN
     DECLARE @id_expensa_anterior INT;
     SET @ingreso_total = 0;
 
-    -- 1) Consorcio e id de expensa anterior
+    -- buscamos consorcio e id de expensa anterior
     SELECT @id_consorcio = e.id_consorcio
     FROM adm.Expensa e
     WHERE e.id_expensa = @id_expensa_actual;
@@ -719,7 +667,7 @@ BEGIN
 
     IF @id_expensa_anterior IS NULL
     BEGIN
-        RAISERROR('No se encontró una expensa anterior para este consorcio.',16,1);
+        RAISERROR('No se encontro una expensa anterior para este consorcio.',16,1);
         RETURN;
     END;
 
@@ -728,14 +676,14 @@ BEGIN
             a.id_uni_func,
             pago_recibido = ISNULL(a.pago_recibido, 0),
 
-            -- Sólo deuda positiva del período anterior
+            -- Solo deuda positiva del periodo anterior
             deuda_anterior_pos = CASE 
                                    WHEN ISNULL(p.deuda,0) + ISNULL(p.interes_mora,0) > 0 
                                    THEN ISNULL(p.deuda,0) + ISNULL(p.interes_mora,0) 
                                    ELSE 0 
                                  END,
 
-            -- Sólo gastos anteriores positivos
+            -- Solo gastos anteriores positivos
             gastos_anteriores_pos = CASE 
                                       WHEN ISNULL(p.expensas_ordinarias,0)
                                          + ISNULL(p.expensas_extraordinarias,0)
@@ -788,8 +736,6 @@ BEGIN
 END
 GO
 
-
-
 CREATE OR ALTER PROCEDURE fin.CalcularIngresosPorGastos
     @id_expensa_actual INT,
 	@ingreso_total DECIMAL(18,2) OUTPUT
@@ -801,9 +747,7 @@ BEGIN
     DECLARE @id_expensa_anterior INT;
     SET @ingreso_total = 0;
 
-    ------------------------------------------------------------
-    -- 1) Consorcio de la expensa actual
-    ------------------------------------------------------------
+    -- id consorcio de la expensa actual
     SELECT @id_consorcio = e.id_consorcio
     FROM adm.Expensa e
     WHERE e.id_expensa = @id_expensa_actual;
@@ -814,9 +758,7 @@ BEGIN
         RETURN;
     END
 
-    ------------------------------------------------------------
-    -- 2) Buscar expensa anterior del mismo consorcio
-    ------------------------------------------------------------
+    -- buscar expensa anterior del mismo consorcio
     SELECT TOP 1 @id_expensa_anterior = e.id_expensa
     FROM adm.Expensa e
     WHERE e.id_consorcio = @id_consorcio
@@ -825,14 +767,12 @@ BEGIN
 
     IF @id_expensa_anterior IS NULL
     BEGIN
-        RAISERROR('No se encontró expensa anterior para este consorcio.', 16, 1);
+        RAISERROR('No se encontro expensa anterior para este consorcio.', 16, 1);
         RETURN;
     END
 
-    ------------------------------------------------------------
-    -- 3) Calcular ingresos aplicados a GASTOS (de la expensa ANTERIOR)
-    --    contra lo PAGADO en la expensa ACTUAL, por UF
-    ------------------------------------------------------------
+    --  Calcular ingresos aplicados a gastos de la expensa ANTERIOR
+    --  contra lo pagado en la expensa actual, por UF
     ;WITH Datos AS (
         SELECT
             a.id_uni_func,
@@ -857,9 +797,6 @@ BEGIN
         )
     FROM Datos;
 
-    ------------------------------------------------------------
-    -- 4) Resultado total
-    ------------------------------------------------------------
     RETURN @ingreso_total
 END
 GO
@@ -874,9 +811,7 @@ BEGIN
 
     SET @ingreso_total = 0;
 
-    ------------------------------------------------------------
-    -- 1. Calcular pagos adelantados por unidad funcional
-    ------------------------------------------------------------
+    -- calculamos pagos adelantados por unidad funcional
     ;WITH Datos AS (
         SELECT 
             id_uni_func,
@@ -897,9 +832,6 @@ BEGIN
         )
     FROM Datos;
 
-    ------------------------------------------------------------
-    -- 2. Devolver resultado
-    ------------------------------------------------------------
     RETURN @ingreso_total
 END
 GO

@@ -6,7 +6,7 @@
 --   GARAY QUINTERO, SANTIAGO
 --   SIMCIC, TOBIAS
 --------------------------------------------------
-
+-- Este archivo es el encargado de crear la base de datos con sus tablas y esquemas.
 
 -----------CREACION DE LA BASE DE DATOS-----------
 
