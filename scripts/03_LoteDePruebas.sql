@@ -355,7 +355,7 @@ BEGIN
             
             SET @fecha = DATEFROMPARTS(2025, @mes_formateado, (@i % 10) + 1)
            
-            SET @monto = (@i % 4) * 10000 + 80000
+            SET @monto = (@i % 4) * 10000 + 120000
 
             --Agregado del pago a la tabla
             EXEC fin.AgregarPago
@@ -403,3 +403,9 @@ GO
 
 -- Generar la expensa de Mayo 2025. 
 -- exec fin.GenerarExpensa '2025', '5', 'Consorcio_1'
+/*
+ exec fin.AgregarEstadoFinanciero 1, 1
+ exec fin.AgregarEstadoFinanciero 2, 1
+ exec fin.AgregarEstadoFinanciero 3, 1
+ */
+-- TRUNCATE TABLE fin.EstadoFinanciero

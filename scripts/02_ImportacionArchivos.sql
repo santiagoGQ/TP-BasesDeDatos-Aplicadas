@@ -729,6 +729,9 @@ exec fin.GenerarExpensa '2025', '3', 'Alberdi'
 exec fin.GenerarExpensa '2025', '4', 'Alberdi'
 exec fin.GenerarExpensa '2025', '5', 'Alberdi'
 
+exec fin.AgregarEstadoFinanciero 4, 2
+exec fin.AgregarEstadoFinanciero 5, 2
+exec fin.AgregarEstadoFinanciero 6, 2
 
 
 TRUNCATE TABLE fin.EstadoDeCuenta

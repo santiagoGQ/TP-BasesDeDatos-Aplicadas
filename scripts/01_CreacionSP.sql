@@ -573,7 +573,7 @@ BEGIN
 			SET @saldo_anterior = (SELECT saldo_cierre from fin.EstadoFinanciero where id_expensa = @id_expensa_anterior)
 			--revisar este calculo de abajo. Falta setear @saldo_anterior
 			SET @saldo_al_cierre = @saldo_anterior - (@ing_exp_adeudadas + @ing_en_termino + @ing_adelantado ) + @egresos
-
+			PRINT(@ing_adelantado)
 			INSERT INTO fin.EstadoFinanciero (id_expensa, saldo_anterior, ing_en_termino, ing_exp_adeudadas, ing_adelantado, egresos, saldo_cierre)
 			VALUES (@id_expensa, @saldo_anterior, @ing_en_termino, @ing_exp_adeudadas, @ing_adelantado, @egresos, @saldo_al_cierre)
 		END
@@ -685,18 +685,16 @@ GO
 
 CREATE OR ALTER PROCEDURE fin.CalcularIngresosPorExpensasAdeudadas
     @id_expensa_actual INT,
-	@ingreso_total DECIMAL(18,2) OUTPUT
+    @ingreso_total DECIMAL(18,2) OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    DECLARE @id_consorcio INT
-    DECLARE @id_expensa_anterior INT
-    SET @ingreso_total = 0
+    DECLARE @id_consorcio INT;
+    DECLARE @id_expensa_anterior INT;
+    SET @ingreso_total = 0;
 
-    ------------------------------------------------------------
-    -- 1. Buscar el consorcio y la expensa anterior
-    ------------------------------------------------------------
+    -- 1) Consorcio e id de expensa anterior
     SELECT @id_consorcio = e.id_consorcio
     FROM adm.Expensa e
     WHERE e.id_expensa = @id_expensa_actual;
@@ -711,45 +709,74 @@ BEGIN
     BEGIN
         RAISERROR('No se encontró una expensa anterior para este consorcio.',16,1);
         RETURN;
-    END
+    END;
 
-    ------------------------------------------------------------
-    -- 2. Calcular pago aplicado a deuda por unidad funcional
-    ------------------------------------------------------------
     ;WITH Datos AS (
         SELECT 
-            actual.id_uni_func,
-            actual.pago_recibido,
-            anterior.deuda + anterior.interes_mora AS deuda_anterior,
-            anterior.expensas_ordinarias + anterior.expensas_extraordinarias 
-                + anterior.cochera + anterior.baulera AS gastos_anteriores
-        FROM fin.EstadoDeCuenta actual
-        INNER JOIN fin.EstadoDeCuenta anterior
-            ON actual.id_uni_func = anterior.id_uni_func
-           AND anterior.id_expensa = @id_expensa_anterior
-        WHERE actual.id_expensa = @id_expensa_actual
-    )
-    SELECT 
-        @ingreso_total = SUM(
-            CASE 
-                WHEN (pago_recibido - gastos_anteriores) > 0 
-                     THEN 
-                        CASE 
-                            WHEN (pago_recibido - gastos_anteriores) > deuda_anterior 
-                                 THEN deuda_anterior
-                            ELSE (pago_recibido - gastos_anteriores)
-                        END
-                ELSE 0
-            END
-        )
-    FROM Datos;
+            a.id_uni_func,
+            pago_recibido = ISNULL(a.pago_recibido, 0),
 
-    ------------------------------------------------------------
-    -- 3. Mostrar resultado
-    ------------------------------------------------------------
-    RETURN @ingreso_total
+            -- Sólo deuda positiva del período anterior
+            deuda_anterior_pos = CASE 
+                                   WHEN ISNULL(p.deuda,0) + ISNULL(p.interes_mora,0) > 0 
+                                   THEN ISNULL(p.deuda,0) + ISNULL(p.interes_mora,0) 
+                                   ELSE 0 
+                                 END,
+
+            -- Sólo gastos anteriores positivos
+            gastos_anteriores_pos = CASE 
+                                      WHEN ISNULL(p.expensas_ordinarias,0)
+                                         + ISNULL(p.expensas_extraordinarias,0)
+                                         + ISNULL(p.cochera,0)
+                                         + ISNULL(p.baulera,0) > 0
+                                      THEN ISNULL(p.expensas_ordinarias,0)
+                                         + ISNULL(p.expensas_extraordinarias,0)
+                                         + ISNULL(p.cochera,0)
+                                         + ISNULL(p.baulera,0)
+                                      ELSE 0
+                                    END,
+
+            -- Si el saldo anterior de la fila actual es negativo (a favor), no hay deuda a cobrar
+            saldo_anterior = ISNULL(a.saldo_anterior,0)
+        FROM fin.EstadoDeCuenta a
+        JOIN fin.EstadoDeCuenta p
+          ON p.id_expensa = @id_expensa_anterior
+         AND p.id_uni_func = a.id_uni_func
+        WHERE a.id_expensa = @id_expensa_actual
+    ),
+    Normalizado AS (
+        SELECT
+            id_uni_func,
+            pago_recibido,
+            -- Si el saldo anterior actual ya es a favor, fuerzo deuda = 0
+            deuda_valida = CASE WHEN saldo_anterior < 0 THEN 0 ELSE deuda_anterior_pos END,
+            gastos_val = gastos_anteriores_pos
+        FROM Datos
+    ),
+    Resultado AS (
+        SELECT
+            id_uni_func,
+            ingreso_por_deuda = 
+                CASE 
+                    WHEN pago_recibido > gastos_val 
+                    THEN 
+                        CASE 
+                            WHEN (pago_recibido - gastos_val) > deuda_valida 
+                            THEN deuda_valida
+                            ELSE (pago_recibido - gastos_val)
+                        END
+                    ELSE 0
+                END
+        FROM Normalizado
+    )
+    SELECT @ingreso_total = SUM(ingreso_por_deuda)
+    FROM Resultado;
+
+    RETURN @ingreso_total;
 END
 GO
+
+
 
 CREATE OR ALTER PROCEDURE fin.CalcularIngresosPorGastos
     @id_expensa_actual INT,
@@ -849,8 +876,10 @@ BEGIN
     SELECT 
         @ingreso_total = SUM(
             CASE 
-                WHEN pago_recibido > saldo_anterior 
-                     THEN (pago_recibido - saldo_anterior)
+                -- Si el saldo anterior es negativo o cero (a favor), todo el pago es ingreso adelantado
+                WHEN saldo_anterior <= 0 THEN pago_recibido
+                -- Si el saldo anterior es positivo, solo lo que exceda ese saldo es adelantado
+                WHEN pago_recibido > saldo_anterior THEN (pago_recibido - saldo_anterior)
                 ELSE 0
             END
         )
@@ -866,4 +895,3 @@ GO
 
 -- exec fin.CalcularIngresosPorExpensasAdeudadas 3
 -- exec fin.CalcularIngresosPorGastos 3
--- exec fin.CalcularIngresosPorExpensasAdelantadas 3
