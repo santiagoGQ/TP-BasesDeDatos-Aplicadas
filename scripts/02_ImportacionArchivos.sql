@@ -429,7 +429,7 @@ BEGIN
 END
 GO
 
-CREATE OR ALTER PROCEDURE adm.ImportarGastos -- TODO: Habria que poner una verificacion de que si los pagos ya fueron ingresados que no se pueda reemplazar
+CREATE OR ALTER PROCEDURE adm.ImportarGastos
     @ruta_archivo NVARCHAR(255)
 AS
 BEGIN
@@ -699,6 +699,10 @@ BEGIN
 
             SET @i += 1;
         END
+        -- Saldo anterior IF no existe expensa anterior, saldoAnt= 0. ELSE expensa_anterior.saldoAlCierre
+        -- Ingresos por pagos en termino. SUM(
+        -- egresos: usar la vista que arme
+        -- saldo al cierre: total ingresos - egresos
         COMMIT
     END TRY
     BEGIN CATCH
@@ -720,6 +724,11 @@ exec fin.ImportarPagos N'C:\Temp\pagos_consorcios.csv'
 exec fin.GenerarExpensa '2025', '3', 'Azcuenaga'
 exec fin.GenerarExpensa '2025', '4', 'Azcuenaga'
 exec fin.GenerarExpensa '2025', '5', 'Azcuenaga'
+
+exec fin.GenerarExpensa '2025', '3', 'Alberdi'
+exec fin.GenerarExpensa '2025', '4', 'Alberdi'
+exec fin.GenerarExpensa '2025', '5', 'Alberdi'
+
 
 
 TRUNCATE TABLE fin.EstadoDeCuenta

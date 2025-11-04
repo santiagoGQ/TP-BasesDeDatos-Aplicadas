@@ -325,6 +325,7 @@ IF OBJECT_ID('fin.EstadoFinanciero') IS NULL
 BEGIN
     CREATE TABLE fin.EstadoFinanciero(
         id_expensa INT NOT NULL,
+        saldo_anterior DECIMAL(10,2) NOT NULL,
         ing_en_termino DECIMAL(10,2) NOT NULL,
         ing_exp_adeudadas DECIMAL(10,2),
         ing_adelantado DECIMAL(10,2) NOT NULL,
@@ -333,7 +334,7 @@ BEGIN
 
         CONSTRAINT PK_EstadoFinanciero PRIMARY KEY (id_expensa),
         CONSTRAINT FK_Expensa_EstadoFinanciero FOREIGN KEY (id_expensa) REFERENCES adm.Expensa(id_expensa),
-        CONSTRAINT CK_EstadoFinancieroMayorCero CHECK (ing_en_termino>=0 AND ing_exp_adeudadas>=0 AND ing_adelantado>=0 AND egresos>=0 AND saldo_cierre>=0)
+        CONSTRAINT CK_EstadoFinancieroMayorCero CHECK (ing_en_termino>=0 AND ing_exp_adeudadas>=0 AND ing_adelantado>=0 AND egresos>=0)
 );END
 
 IF OBJECT_ID('fin.EstadoDeCuenta') IS NULL

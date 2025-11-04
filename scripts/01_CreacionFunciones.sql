@@ -155,3 +155,55 @@ BEGIN
 
 END
 GO
+
+CREATE OR ALTER FUNCTION adm.ObtenerMesAnterior(@mesActual VARCHAR(20))
+RETURNS VARCHAR(20)
+AS
+BEGIN
+    DECLARE @mesAnterior VARCHAR(20)
+
+    SET @mesAnterior = CASE LOWER(@mesActual)
+        WHEN 'enero' THEN 'diciembre'
+        WHEN 'febrero' THEN 'enero'
+        WHEN 'marzo' THEN 'febrero'
+        WHEN 'abril' THEN 'marzo'
+        WHEN 'mayo' THEN 'abril'
+        WHEN 'junio' THEN 'mayo'
+        WHEN 'julio' THEN 'junio'
+        WHEN 'agosto' THEN 'julio'
+        WHEN 'septiembre' THEN 'agosto'
+        WHEN 'octubre' THEN 'septiembre'
+        WHEN 'noviembre' THEN 'octubre'
+        WHEN 'diciembre' THEN 'noviembre'
+        ELSE NULL
+    END
+
+    RETURN @mesAnterior
+END
+GO
+
+CREATE OR ALTER FUNCTION adm.ObtenerMesSiguiente(@mesActual VARCHAR(20))
+RETURNS VARCHAR(20)
+AS
+BEGIN
+    DECLARE @mesSiguiente VARCHAR(20)
+
+    SET @mesSiguiente = CASE LOWER(@mesActual)
+        WHEN 'enero' THEN 'febrero'
+        WHEN 'febrero' THEN 'marzo'
+        WHEN 'marzo' THEN 'abril'
+        WHEN 'abril' THEN 'mayo'
+        WHEN 'mayo' THEN 'junio'
+        WHEN 'junio' THEN 'julio'
+        WHEN 'julio' THEN 'agosto'
+        WHEN 'agosto' THEN 'septiembre'
+        WHEN 'septiembre' THEN 'octubre'
+        WHEN 'octubre' THEN 'noviembre'
+        WHEN 'noviembre' THEN 'diciembre'
+        WHEN 'diciembre' THEN 'enero'
+        ELSE NULL
+    END
+
+    RETURN @mesSiguiente
+END
+GO
