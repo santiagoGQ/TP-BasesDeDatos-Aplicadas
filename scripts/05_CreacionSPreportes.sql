@@ -93,6 +93,54 @@ BEGIN
 END
 GO
 
+CREATE OR ALTER PROCEDURE rep.Tres_RecaudacionPorProcedencia
+	@id_consorcio INT, @anio INT
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	BEGIN TRY
+		--Validacion de parametros ingresados
+		IF @id_consorcio IS NULL
+		BEGIN
+			RAISERROR('Debe especificar un consorcio.',16,1)
+			RETURN
+		END
+
+		IF NOT EXISTS (SELECT 1 FROM adm.Consorcio WHERE id_consorcio=@id_consorcio)
+		BEGIN
+			RAISERROR('No existe consorcio con ese id.',16,1)
+			RETURN
+		END
+
+		IF @anio IS NULL OR @anio> YEAR(GETDATE())
+		BEGIN
+			RAISERROR('Debe especificar una fecha valida.',16,1)
+			RETURN
+		END
+
+		--Consulta del reporte
+		SELECT
+			ex.fechaGenerado AS Periodo,
+			SUM(ISNULL(ec.expensas_ordinarias,0)) AS Ordinario,
+			SUM(ISNULL(ec.expensas_extraordinarias,0)) AS Extraordinario,
+			SUM(ISNULL(ec.cochera,0)) + SUM(ISNULL(ec.baulera,0)) AS Otros
+		FROM fin.EstadoDeCuenta ec
+		INNER JOIN adm.Expensa ex ON ex.id_expensa = ec.id_expensa
+		WHERE (ex.id_consorcio = @id_consorcio)
+		  AND YEAR(ex.fechaGenerado)=@anio
+		GROUP BY ex.fechaGenerado
+		ORDER BY Periodo
+	END TRY
+
+	BEGIN CATCH
+		PRINT('Error al generar el reporte: ' + ERROR_MESSAGE())
+	END CATCH
+END
+GO
+
+
+
 CREATE OR ALTER PROCEDURE rep.Cuatro_TopMeses
 	@id_consorcio INT, @anio INT
 AS
@@ -178,3 +226,4 @@ GO
 --EXEC rep.Dos_TotalUFporMes 2,2025
 --EXEC rep.Cuatro_TopMeses 2,2025
 --EXEC rep.Cinco_TopMora 2
+--EXEC rep.Tres_RecaudacionPorProcedencia 3,2025
