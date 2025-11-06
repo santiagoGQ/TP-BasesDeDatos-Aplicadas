@@ -8,6 +8,23 @@
 --------------------------------------------------
 -- Este archivo es el encargado de crear la base de datos con sus tablas y esquemas.
 
+--------NORMAS DE NOMENCLATURA UTILIZADAS---------
+
+-- ARCHIVOS: Cumplen con el formato XX_descripcion.sql, siendo XX un número con el orden de ejecución 
+--           y "descripcion" un texto corto en PascalCase que identifica el contenido del script
+
+-- ESQUEMAS: Se escriben en minúscula, usando un nombre corto para referir a una funcionalidad (Ejemplo: adm, Administración)
+
+-- TABLAS: Se nombran en singular utilizando PascalCase (primera letra de cada palabra en mayúsucula)
+
+-- ATRIBUTOS: Se nombran utilizando snake_case (palabras en minúscula con "_" en lugar de espacio)
+
+-- FUNCIONES: Se nombran utilizando PascalCase, indicando el objetivo de la función
+
+-- STORE PROCEDURES: Se nombran utilizando PascalCase y muestran en forma concisa para qué sirven
+
+-- VARIABLES: Se utiliza snake_case para nombrarlas y muestran claramente que almacenarán
+
 -----------CREACION DE LA BASE DE DATOS-----------
 
 --Cambia a master
