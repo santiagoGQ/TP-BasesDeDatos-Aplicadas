@@ -108,7 +108,7 @@ BEGIN
         razon_social NVARCHAR(51) NOT NULL,
         motivo VARCHAR(30) NOT NULL,
         id_consorcio INT NOT NULL,
-        cuenta VARCHAR(50)
+        cuenta VARBINARY(256)
 
         CONSTRAINT PK_Proveedor PRIMARY KEY (id_proveedor),
         CONSTRAINT FK_ConsorcioProveedor FOREIGN KEY (id_consorcio) REFERENCES adm.Consorcio(id_consorcio),
@@ -137,10 +137,10 @@ BEGIN
         id_prop INT IDENTITY(1,1),
         nombre NVARCHAR(30) NOT NULL,
         apellido NVARCHAR(30) NOT NULL,
-        dni INT NOT NULL, --TODO Agregamos Unique?
+        dni VARBINARY(256) NOT NULL, --TODO Agregamos Unique?
         email NVARCHAR(50) NOT NULL,
-        telefono INT NOT NULL,
-        cbu CHAR(22) NOT NULL,
+        telefono VARBINARY(256) NOT NULL,
+        cbu VARBINARY(256) NOT NULL,
 
         CONSTRAINT PK_Propietario PRIMARY KEY (id_prop)
         
@@ -152,10 +152,10 @@ BEGIN
         id_inq INT IDENTITY(1,1),
         nombre NVARCHAR(30) NOT NULL,
         apellido NVARCHAR(30) NOT NULL,
-        dni INT NOT NULL, --TODO Agregamos Unique?
+        dni VARBINARY(256) NOT NULL, --TODO Agregamos Unique?
         email NVARCHAR(50) NOT NULL,
-        telefono INT NOT NULL,
-        cbu CHAR(22) NOT NULL,
+        telefono VARBINARY(256) NOT NULL,
+        cbu VARBINARY(256) NOT NULL,
 
         CONSTRAINT PK_Inquilino PRIMARY KEY (id_inq)
         
@@ -172,7 +172,7 @@ BEGIN
         piso VARCHAR(4) NOT NULL,
         depto VARCHAR(4) NOT NULL,
         coeficiente DECIMAL(4,2) NOT NULL,
-        cbu CHAR(22),
+        cbu VARBINARY(256),
         baulera_m2 TINYINT NOT NULL,
         cochera_m2 TINYINT NOT NULL
 
@@ -318,7 +318,7 @@ BEGIN
         id_pago INT IDENTITY(1,1) NOT NULL,
         id_uni_func INT,
         fecha DATETIME NOT NULL,
-        cbu_cvu CHAR(22) NOT NULL,
+        cbu_cvu VARBINARY(256) NOT NULL,
         monto DECIMAL(10,2) NOT NULL,
         asociado BIT NOT NULL, 
 

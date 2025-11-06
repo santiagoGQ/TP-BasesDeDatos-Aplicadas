@@ -45,23 +45,33 @@ BEGIN
 	DECLARE @nombre_formateado NVARCHAR(30) = adm.FormatearNombreOApellido(@nombre)
 	DECLARE @apellido_formateado NVARCHAR(30) = adm.FormatearNombreOApellido(@apellido)
 	DECLARE @email_formateado NVARCHAR(50) = adm.FormatearEmail(@email)
-
+	
 	BEGIN TRY 
+
+	OPEN SYMMETRIC KEY ClaveSimetricaDatos
+	DECRYPTION BY CERTIFICATE CertificadoCifrado;
+	
+	DECLARE @cbu_cifrado VARBINARY(256) = EncryptByKey(Key_GUID('ClaveSimetricaDatos'), CAST(@cbu AS NVARCHAR(22)))
+	DECLARE @dni_cifrado VARBINARY(256) = EncryptByKey(Key_GUID('ClaveSimetricaDatos'), CAST(@dni AS NVARCHAR(8)))
+	DECLARE @telefono_cifrado VARBINARY(256) = EncryptByKey(Key_GUID('ClaveSimetricaDatos'), CAST(@telefono AS NVARCHAR(15)))
+
 	-- Si el propietario existe, lo actualizamos
-	IF EXISTS (SELECT 1 from adm.Propietario Prop where Prop.dni = @dni)
+	IF EXISTS (SELECT 1 from adm.Vista_Propietario Prop where Prop.dni = @dni)
 		UPDATE adm.Propietario
         SET nombre = @nombre,
             apellido = @apellido,
             email = @email,
-            telefono = @telefono,
-            cbu = @cbu
-        WHERE DNI = @dni;
+            telefono = @telefono_cifrado,
+            cbu = @cbu_cifrado
+        WHERE CONVERT(INT, CONVERT(NVARCHAR(10), DecryptByKey(dni))) = @dni;
 	ELSE
 		INSERT INTO adm.Propietario(nombre, apellido, dni, email, telefono, cbu)
-			VALUES(@nombre_formateado, @apellido_formateado, @dni, @email_formateado, @telefono, @cbu)
+			VALUES(@nombre_formateado, @apellido_formateado, @dni_cifrado, @email_formateado, @telefono_cifrado, @cbu_cifrado)
+	CLOSE SYMMETRIC KEY ClaveSimetricaDatos;
 	END TRY
 
 	BEGIN CATCH
+		CLOSE SYMMETRIC KEY ClaveSimetricaDatos;
 		PRINT 'Ocurrio un error al agregar un propietario.';
 		PRINT 'Mensaje: ' + ERROR_MESSAGE();
 	END CATCH
@@ -82,20 +92,30 @@ BEGIN
 	DECLARE @email_formateado NVARCHAR(50) = adm.FormatearEmail(@email)
 
 	BEGIN TRY
+
+	OPEN SYMMETRIC KEY ClaveSimetricaDatos
+	DECRYPTION BY CERTIFICATE CertificadoCifrado;
+	
+	DECLARE @cbu_cifrado VARBINARY(256) = EncryptByKey(Key_GUID('ClaveSimetricaDatos'), CAST(@cbu AS NVARCHAR(22)))
+	DECLARE @dni_cifrado VARBINARY(256) = EncryptByKey(Key_GUID('ClaveSimetricaDatos'), CAST(@dni AS NVARCHAR(8)))
+	DECLARE @telefono_cifrado VARBINARY(256) = EncryptByKey(Key_GUID('ClaveSimetricaDatos'), CAST(@telefono AS NVARCHAR(15)))
+
 	-- Si el inquilino existe, lo actualizamos
-	IF EXISTS (SELECT 1 from adm.Inquilino Inq where Inq.dni = @dni)
+	IF EXISTS (SELECT 1 from adm.Vista_Inquilino Inq where Inq.dni = @dni)
 		UPDATE adm.Inquilino
         SET nombre = @nombre,
             apellido = @apellido,
             email = @email,
-            telefono = @telefono,
-            cbu = @cbu
-        WHERE DNI = @dni;
+            telefono = @telefono_cifrado,
+            cbu = @cbu_cifrado
+        WHERE CONVERT(INT, CONVERT(NVARCHAR(10), DecryptByKey(dni))) = @dni;
 	ELSE
 		INSERT INTO adm.Inquilino(nombre, apellido, dni, email, telefono, cbu)
-			VALUES(@nombre_formateado, @apellido_formateado, @dni, @email_formateado, @telefono, @cbu)
+			VALUES(@nombre_formateado, @apellido_formateado, @dni_cifrado, @email_formateado, @telefono_cifrado, @cbu_cifrado)
+	CLOSE SYMMETRIC KEY ClaveSimetricaDatos;
 	END TRY
 	BEGIN CATCH
+		CLOSE SYMMETRIC KEY ClaveSimetricaDatos;
 		PRINT 'Ocurrio un error al agregar un inquilino.';
 		PRINT 'Mensaje: ' + ERROR_MESSAGE();
 	END CATCH
@@ -234,14 +254,21 @@ BEGIN
             RETURN
         END
 
+		OPEN SYMMETRIC KEY ClaveSimetricaDatos
+		DECRYPTION BY CERTIFICATE CertificadoCifrado;
+
 		INSERT INTO adm.Proveedor(razon_social,motivo,id_consorcio,cuenta)
-		VALUES (@razon_social,@motivo,@id_consorcio,@cuenta)
+		VALUES (@razon_social,@motivo,@id_consorcio,EncryptByKey(Key_GUID('ClaveSimetricaDatos'), CAST(@cuenta AS NVARCHAR(50))))
 
 		SET @id_proveedor = SCOPE_IDENTITY()
+		CLOSE SYMMETRIC KEY ClaveSimetricaDatos;
+
 
 	END TRY
 	BEGIN CATCH
 		PRINT('Error al agregar proveedor: ' + ERROR_MESSAGE())
+		CLOSE SYMMETRIC KEY ClaveSimetricaDatos;
+
 	END CATCH
 END
 GO
@@ -444,19 +471,23 @@ CREATE OR ALTER PROCEDURE fin.AgregarPago
 	@monto DECIMAL(10,2)
 AS
 BEGIN
+	OPEN SYMMETRIC KEY ClaveSimetricaDatos
+	DECRYPTION BY CERTIFICATE CertificadoCifrado;
 	DECLARE @asociado BIT = 0
-
+	DECLARE @cuenta_origen_cifrado VARBINARY(256) = EncryptByKey(Key_GUID('ClaveSimetricaDatos'), CAST(@cuenta_origen AS NVARCHAR(22)))
 	--Validacion de duplicado
-	IF NOT EXISTS (SELECT 1 FROM fin.Pago 
+	IF NOT EXISTS (SELECT 1 FROM fin.Vista_Pago 
 					WHERE ISNULL(id_uni_func,-1) = ISNULL(@id_uni_func,-1) AND fecha = @fecha AND ISNULL(cbu_cvu,-1) = ISNULL(@cuenta_origen,-1))
 	BEGIN
 		--Validacion de cbu, si se encuentra pago asociado, caso contrario pago no asociado
-		IF EXISTS (SELECT 1 FROM adm.UnidadFuncional WHERE cbu = @cuenta_origen)
+		IF EXISTS (SELECT 1 FROM adm.Vista_UnidadFuncional WHERE cbu = @cuenta_origen)
 			SET @asociado = 1
 
 		INSERT INTO fin.Pago(id_uni_func, fecha, cbu_cvu, monto, asociado)
-			VALUES (@id_uni_func, @fecha, @cuenta_origen, @monto, @asociado)
+			VALUES (@id_uni_func, @fecha, @cuenta_origen_cifrado, @monto, @asociado)
 	END
+	CLOSE SYMMETRIC KEY ClaveSimetricaDatos;
+
 END
 GO
 

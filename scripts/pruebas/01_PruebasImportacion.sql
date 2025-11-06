@@ -12,6 +12,7 @@
 USE COM2900_G04
 GO
 
+
 adm.AgregarTipoServicioLimpieza 'Limpieza test'
 exec adm.ImportarConsorcios N'C:\Temp\datos varios.xlsx', N'C:\Temp\UF por consorcio.txt'
 exec adm.ImportarProveedores N'C:\Temp\datos varios.xlsx'

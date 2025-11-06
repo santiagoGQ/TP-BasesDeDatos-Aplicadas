@@ -210,6 +210,8 @@ BEGIN
         FROM #ProveedoresTemp
 
     -- Insertar o actualizar en adm.Proveedor
+    OPEN SYMMETRIC KEY ClaveSimetricaDatos DECRYPTION BY CERTIFICATE CertificadoCifrado;
+
     MERGE adm.Proveedor AS destino
        USING (
            SELECT 
@@ -225,15 +227,15 @@ BEGIN
           AND destino.motivo = origen.tipo_de_gasto
           AND destino.razon_social = origen.razon_social_final
        WHEN MATCHED THEN
-           UPDATE SET 
-               destino.cuenta = origen.cuenta_final
+            UPDATE SET destino.cuenta = EncryptByKey(Key_GUID('ClaveSimetricaDatos'), CAST(origen.cuenta_final AS NVARCHAR(50)))
+
        WHEN NOT MATCHED THEN
            INSERT (razon_social, motivo, id_consorcio,cuenta)
            VALUES (
                origen.razon_social_final,
                origen.tipo_de_gasto,
                origen.id_consorcio,
-               origen.cuenta_final
+               EncryptByKey(Key_GUID('ClaveSimetricaDatos'), CAST(origen.cuenta_final AS NVARCHAR(50)))
            );
 
     -- Insertamos limpieza a mano
@@ -242,7 +244,7 @@ BEGIN
         d.razon_social_final,
         d.tipo_de_gasto,
         c.id_consorcio,
-        d.cuenta_final
+        EncryptByKey(Key_GUID('ClaveSimetricaDatos'), CAST(d.cuenta_final AS NVARCHAR(50)))
     FROM #DatosLimpios d
     INNER JOIN adm.Consorcio c ON c.nombre = d.consorcio
     WHERE d.tipo_de_gasto LIKE '%LIMPIEZA%'
@@ -253,7 +255,7 @@ BEGIN
               AND p.motivo = d.tipo_de_gasto
               AND p.razon_social = d.razon_social_final
         );
-
+    CLOSE SYMMETRIC KEY ClaveSimetricaDatos;
     DROP TABLE #ProveedoresTemp;
     DROP TABLE #DatosLimpios;
 END;
@@ -391,15 +393,19 @@ CREATE OR ALTER PROCEDURE adm.AsociarHuespedAUnidadFuncional
     @departamento NCHAR(1)
 AS
 BEGIN
+    OPEN SYMMETRIC KEY ClaveSimetricaDatos DECRYPTION BY CERTIFICATE CertificadoCifrado;
+
     DECLARE @id_consorcio INT = (SELECT id_consorcio FROM adm.Consorcio where nombre = @nombre_consorcio)
-    DECLARE @id_inquilino INT = (SELECT id_inq FROM adm.Inquilino WHERE cbu = @cbu)
-    DECLARE @id_propietario INT = (SELECT id_prop FROM adm.Propietario WHERE cbu = @cbu)
+    DECLARE @id_inquilino INT = (SELECT id_inq FROM adm.Vista_Inquilino WHERE cbu = @cbu)
+    DECLARE @id_propietario INT = (SELECT id_prop FROM adm.Vista_Propietario WHERE cbu = @cbu)
+    DECLARE @cbu_cifrado VARBINARY(256) = EncryptByKey(Key_GUID('ClaveSimetricaDatos'), CAST(@cbu AS NVARCHAR(22)));
 
      UPDATE  adm.UnidadFuncional
         SET id_inq = @id_inquilino,
             id_prop = @id_propietario,
-            cbu = @cbu
+            cbu = @cbu_cifrado
         WHERE id_consorcio = @id_consorcio AND piso = @piso AND depto = @departamento;
+    CLOSE SYMMETRIC KEY ClaveSimetricaDatos;
 
 END
 GO
@@ -516,6 +522,8 @@ CREATE OR ALTER PROCEDURE fin.ImportarPagos
 AS
 BEGIN
     SET NOCOUNT ON;
+    OPEN SYMMETRIC KEY ClaveSimetricaDatos
+	DECRYPTION BY CERTIFICATE CertificadoCifrado;
 
     CREATE TABLE #PagosTemp (
         id_pago NVARCHAR(10),
@@ -540,6 +548,7 @@ BEGIN
 
     DECLARE @id INT = 1, @max INT;
     SELECT @max = COUNT(*) FROM #PagosTemp;
+    
     WHILE @id <= @max
     BEGIN
         DECLARE @fecha_cruda NVARCHAR(50),
@@ -555,10 +564,14 @@ BEGIN
             @valor = valor
         FROM #PagosTemp
 
+
         IF @fecha_cruda IS NOT NULL
         BEGIN
+            
             SET @fecha = CONVERT(DATE, @fecha_cruda, 103);
-            SET @id_unidad = (SELECT id_uni_func FROM adm.UnidadFuncional where cbu = @cbu_cvu)
+            OPEN SYMMETRIC KEY ClaveSimetricaDatos
+	        DECRYPTION BY CERTIFICATE CertificadoCifrado;
+            SET @id_unidad = (SELECT id_uni_func FROM adm.Vista_UnidadFuncional where cbu = @cbu_cvu)
             SET @importe = fin.FormatearPago(@valor)
             EXEC fin.AgregarPago @id_unidad, @fecha, @cbu_cvu, @importe
         END
@@ -566,6 +579,7 @@ BEGIN
         DELETE TOP (1) FROM #PagosTemp;
         SET @id += 1;
     END
+
     DROP TABLE #PagosTemp
 END
 GO
@@ -611,6 +625,8 @@ BEGIN
         baulera_m2 TINYINT,
         cochera_m2 TINYINT
     )
+    OPEN SYMMETRIC KEY ClaveSimetricaDatos DECRYPTION BY CERTIFICATE CertificadoCifrado;
+
     INSERT INTO #UFxConsorcio (precio_bauleraM2, precio_cocheraM2, nro_uf, id_uni_func, id_inq, id_prop, piso, depto, coeficiente, cbu,
       baulera_m2, cochera_m2)
       
@@ -618,7 +634,8 @@ BEGIN
             baulera_m2, cochera_m2
         FROM fin.Vista_UfYConsorcio
         WHERE id_consorcio = @id_consorcio
-    
+    CLOSE SYMMETRIC KEY ClaveSimetricaDatos;
+
     DECLARE @i INT = 1;
     DECLARE @total INT = (SELECT COUNT(*) FROM #UFxConsorcio);    
     
