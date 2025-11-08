@@ -16,7 +16,7 @@ GO
 --Objetivo: verificar ingresos/egresos semanales del consorcio.
 --Resultado esperado: semanas del 2025 (de expensas del consorcio 1) con TotalIngresos, TotalEgresos, promedio semanal y acumulado.
 --Parametros de entrada: id_consorcio, año, mes_desde, mes_hasta
-EXEC rep.Uno_FlujoSemanal @id_consorcio=1,@anio=2025,@mes_desde=1,@mes_hasta=12
+EXEC rep.Uno_FlujoSemanal @id_consorcio=1,@anio=2025,@mes_desde=4,@mes_hasta=6
 GO
 
 ----------------------REPORTE 2----------------------

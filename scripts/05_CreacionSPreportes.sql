@@ -55,35 +55,24 @@ BEGIN
 
 		--CTE 1 - Recaudacion semanal (pagos recibidos)
         ;WITH CTE_Pagos AS (
-            SELECT
-				uf.id_consorcio AS Consorcio,
-                uf.id_uni_func AS Unidad_Funcional,
-                uf.piso AS Piso,
-                uf.depto AS Depto,
-                uf.cbu AS CBU_Unidad,
-                DATEPART(WEEK, p.fecha) AS Semana,
-                DATENAME(MONTH, p.fecha) AS Mes,
-                SUM(p.monto) AS TotalPagado
-            FROM fin.Pago p
-            INNER JOIN adm.UnidadFuncional uf
-                ON uf.cbu = p.cbu_cvu
-            WHERE uf.id_consorcio = @id_consorcio
-              AND YEAR(p.fecha) = @anio
-              AND MONTH(p.fecha) BETWEEN @mes_desde AND @mes_hasta
-            GROUP BY uf.id_consorcio,uf.id_uni_func, uf.piso, uf.depto, uf.cbu,
-                     DATEPART(WEEK, p.fecha), DATENAME(MONTH, p.fecha)
-        ),
-        CTE_RecaudacionSemanal AS (
-            SELECT
-				Consorcio,
-                Semana,
-                SUM(TotalPagado) AS TotalSemanal,
-                CAST(AVG(SUM(TotalPagado)) OVER() AS DECIMAL(18,2)) AS PromedioSemanal,
-                SUM(SUM(TotalPagado)) OVER(ORDER BY Semana) AS Acumulado
-            FROM CTE_Pagos
-            GROUP BY Consorcio,Semana
-        )
-	SELECT * FROM CTE_RecaudacionSemanal r ORDER BY r.Semana
+			SELECT 
+				DATEPART(WEEK, p.fecha) AS Semana,
+				DATENAME(MONTH, p.fecha) AS Mes,
+				SUM(p.monto) AS TotalSemanal,
+				COUNT(*) AS CantPagos
+			FROM fin.Pago p
+			INNER JOIN adm.UnidadFuncional uf 
+				ON uf.cbu = p.cbu_cvu
+			WHERE uf.id_consorcio = @id_consorcio
+			  AND YEAR(p.fecha) = @anio
+			  AND MONTH(p.fecha) BETWEEN @mes_desde AND @mes_hasta
+			GROUP BY DATEPART(WEEK, p.fecha), DATENAME(MONTH, p.fecha))	
+	SELECT Semana, Mes, TotalSemanal,
+		CAST(TotalSemanal * 1.0 / NULLIF(CantPagos,0) AS DECIMAL(18,2)) AS PromedioSemanal,
+		SUM(TotalSemanal) OVER(ORDER BY Semana) AS Acumulado	
+	FROM CTE_Pagos
+	ORDER BY Semana
+
 	END TRY
 	BEGIN CATCH
 		PRINT('Error al generar el reporte: ' + ERROR_MESSAGE())
