@@ -43,6 +43,7 @@ GO
 --Objetivo: obtener los 5 meses con mayores ingresos y egresos de un consorcio.
 --Resultado esperado: XML con los meses, ingresos, egresos y diferencia total durante el año 2025 del consorcio 2.
 --Parametros de entrada: id_consorcio, año, top (los X primeros)
+--SALIDA EN XML
 EXEC rep.Cuatro_TopMeses 2,2025,5
 GO
 
@@ -50,6 +51,7 @@ GO
 --Objetivo: obtener el top 3 de propietarios con mayor deuda
 --Resultado esperado: XML con los datos de contacto de cada propietario del top del consorcio 2
 --Parametros de entrada: id_consorcio, piso, top (los X primeros)
+--SALIDA EN XML
 
 --Todos los pisos
 EXEC rep.Cinco_TopMora @id_consorcio=2,@top=5
