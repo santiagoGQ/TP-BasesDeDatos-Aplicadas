@@ -37,3 +37,12 @@ BEGIN
     INCLUDE (expensas_ordinarias, expensas_extraordinarias, total_a_pagar);
 END;
 GO
+
+-- REPORTE 6 (días entre pagos por UF)
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Pago_UF_Fecha')
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_Pago_UF_Fecha
+    ON fin.Pago (id_uni_func, fecha)
+    INCLUDE (monto, asociado);
+END;
+GO

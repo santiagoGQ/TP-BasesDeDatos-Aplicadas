@@ -39,7 +39,7 @@ BEGIN
 		BEGIN
 			RAISERROR('Debe especificar una fecha valida.',16,1)
 			RETURN
-		END
+		END;
 
 		--CTE 1 - Ingresos semanales (pagos recibidos)
 		WITH CTE_Ingresos AS(
@@ -113,7 +113,7 @@ BEGIN
 		BEGIN
 			RAISERROR('Debe especificar una fecha valida.',16,1)
 			RETURN
-		END
+		END;
 
 		--CTE Recaudacion
 			--Unidad funcional, Mes, Total Pagado
@@ -178,7 +178,7 @@ BEGIN
 			SUM(ISNULL(ec.expensas_extraordinarias,0)) AS Extraordinario,
 			SUM(ISNULL(ec.cochera,0)) + SUM(ISNULL(ec.baulera,0)) AS Otros
 		FROM fin.EstadoDeCuenta ec
-		INNER JOIN adm.Expensa ex ON ex.id_expensa = ec.id_expensa
+		JOIN adm.Expensa ex ON ex.id_expensa = ec.id_expensa
 		WHERE (ex.id_consorcio = @id_consorcio)
 		  AND YEAR(ex.fechaGenerado)=@anio
 		GROUP BY ex.fechaGenerado
@@ -215,7 +215,7 @@ BEGIN
 		BEGIN
 			RAISERROR('Debe especificar una fecha valida.',16,1)
 			RETURN
-		END
+		END;
 
 		--CTE 1 - Ingresos
 		WITH CTE_Ingresos AS (
@@ -259,7 +259,8 @@ BEGIN
 		FROM CTE_Ingresos i
 		FULL JOIN CTE_Egresos e
 			ON i.Anio=e.Anio AND i.Mes=e.Mes
-		ORDER BY (ISNULL(i.TotalIngresos, 0) + ISNULL(e.TotalEgresos, 0)) DESC;
+		ORDER BY (ISNULL(i.TotalIngresos, 0) + ISNULL(e.TotalEgresos, 0)) DESC
+		FOR XML PATH('Mes'), ROOT('TopMeses'),ELEMENTS;
 	END TRY
 	BEGIN CATCH
 		PRINT('Error al generar el reporte: ' + ERROR_MESSAGE())
@@ -286,7 +287,7 @@ BEGIN
 		BEGIN
 			RAISERROR('No existe consorcio con ese id.',16,1)
 			RETURN
-		END
+		END;
 
 		--CTE Deudas de propietario
 		WITH CTE_Deuda AS(
@@ -308,6 +309,7 @@ BEGIN
 			c.dni,c.email, c.telefono, c.deuda
 		FROM CTE_Deuda c
 		ORDER BY c.deuda ASC
+		FOR XML PATH('Propietario'), ROOT('TopMorosos'),ELEMENTS;
 	END TRY
 	BEGIN CATCH
 		PRINT('Error al generar el reporte: ' + ERROR_MESSAGE())
@@ -315,9 +317,47 @@ BEGIN
 END			
 GO
 
--- id_exp: 1 | id_consorcio: 2 | fecha: 2025-03-31
---EXEC rep.Uno_FlujoSemanal 2,2025
---EXEC rep.Dos_TotalUFporMes 2,2025
---EXEC rep.Cuatro_TopMeses 2,2025
---EXEC rep.Cinco_TopMora 2
---EXEC rep.Tres_RecaudacionPorProcedencia 3,2025
+CREATE OR ALTER PROCEDURE rep.Seis_DiasPagosUF
+	@id_consorcio INT, @anio INT
+AS
+BEGIN
+	SET NOCOUNT ON;
+	BEGIN TRY
+	--Validacion de parametros ingresados
+		IF @id_consorcio IS NULL
+		BEGIN
+			RAISERROR('Debe especificar un consorcio.',16,1)
+			RETURN
+		END
+
+		IF NOT EXISTS (SELECT 1 FROM adm.Consorcio WHERE id_consorcio=@id_consorcio)
+		BEGIN
+			RAISERROR('No existe consorcio con ese id.',16,1)
+			RETURN
+		END
+
+		IF @anio IS NULL OR @anio> YEAR(GETDATE())
+		BEGIN
+			RAISERROR('Debe especificar una fecha valida.',16,1)
+			RETURN
+		END;
+
+		WITH PagosOrd AS(
+			SELECT
+				uf.id_uni_func AS Unidad_Funcional,
+				uf.piso AS Piso,
+				uf.depto AS Depto,
+				p.fecha AS Fecha_de_Pago,
+				DATEDIFF(day,lag(p.fecha) over(partition by uf.id_uni_func order by p.fecha),p.fecha) AS Dias_entre_Pagos
+			FROM fin.Pago p
+			JOIN adm.UnidadFuncional uf ON uf.id_uni_func = p.id_uni_func
+			WHERE
+				uf.id_consorcio=@id_consorcio AND YEAR(p.fecha) = @anio AND p.asociado = 1)
+		SELECT * FROM PagosOrd
+		ORDER BY Unidad_Funcional, Fecha_de_Pago;
+	END TRY
+	BEGIN CATCH
+		PRINT('Error al generar el reporte: ' + ERROR_MESSAGE())
+	END CATCH
+END
+GO

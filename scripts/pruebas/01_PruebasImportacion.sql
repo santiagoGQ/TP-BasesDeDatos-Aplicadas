@@ -19,23 +19,29 @@ exec adm.ImportarInquilinoYPropietarios N'C:\Temp\Inquilino-propietarios-datos.c
 exec adm.ImportarRelacionEntreUFyPropInq N'C:\Temp\Inquilino-propietarios-UF.csv'
 exec adm.ImportarGastos N'C:\Temp\Servicios.Servicios.json'
 exec fin.ImportarPagos N'C:\Temp\pagos_consorcios.csv'
+go
 
 exec fin.GenerarExpensa '2025', '3', 'Azcuenaga'
 exec fin.GenerarExpensa '2025', '4', 'Azcuenaga'
 exec fin.GenerarExpensa '2025', '5', 'Azcuenaga'
+go
 
 exec fin.GenerarExpensa '2025', '3', 'Alzaga'
 exec fin.GenerarExpensa '2025', '4', 'Alzaga'
 exec fin.GenerarExpensa '2025', '5', 'Alzaga'
+go
 
 exec fin.GenerarExpensa '2025', '3', 'Alberdi'
 exec fin.GenerarExpensa '2025', '4', 'Alberdi'
 exec fin.GenerarExpensa '2025', '5', 'Alberdi'
+go
 
 exec fin.GenerarExpensa '2025', '3', 'Unzue'
 exec fin.GenerarExpensa '2025', '4', 'Unzue'
 exec fin.GenerarExpensa '2025', '5', 'Unzue'
+go
 
 exec fin.GenerarExpensa '2025', '3', 'Pereyra Iraola'
 exec fin.GenerarExpensa '2025', '4', 'Pereyra Iraola'
 exec fin.GenerarExpensa '2025', '5', 'Pereyra Iraola'
+go
