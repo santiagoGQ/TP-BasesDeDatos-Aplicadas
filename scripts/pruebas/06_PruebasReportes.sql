@@ -15,6 +15,8 @@ GO
 SET LANGUAGE Spanish
 GO
 
+OPEN SYMMETRIC KEY ClaveSimetricaDatos DECRYPTION BY CERTIFICATE CertificadoCifrado;
+
 ----------------------REPORTE 1----------------------
 --Objetivo: verificar ingresos/egresos semanales del consorcio.
 --Resultado esperado: semanas del 2025 (de expensas del consorcio 1) con TotalIngresos, TotalEgresos, promedio semanal y acumulado.
@@ -47,7 +49,7 @@ GO
 --Resultado esperado: XML con los meses, ingresos, egresos y diferencia total durante el año 2025 del consorcio 2.
 --Parametros de entrada: id_consorcio, año, top (los X primeros)
 --SALIDA EN XML
-EXEC rep.Cuatro_TopMeses 2,2025,5
+EXEC rep.Cuatro_TopMeses 6,2025,5
 GO
 
 ----------------------REPORTE 5----------------------
@@ -76,3 +78,5 @@ GO
 --Solo Planta Baja
 EXEC rep.Seis_DiasPagosUF @id_consorcio=2,@anio=2025,@piso='PB'
 GO
+   
+CLOSE SYMMETRIC KEY ClaveSimetricaDatos;

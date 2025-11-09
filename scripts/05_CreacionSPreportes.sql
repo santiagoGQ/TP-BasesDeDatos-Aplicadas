@@ -60,8 +60,8 @@ BEGIN
 				DATENAME(MONTH, p.fecha) AS Mes,
 				SUM(p.monto) AS TotalSemanal,
 				COUNT(*) AS CantPagos
-			FROM fin.Pago p
-			INNER JOIN adm.UnidadFuncional uf 
+			FROM fin.Vista_Pago p
+			INNER JOIN adm.Vista_UnidadFuncional uf 
 				ON uf.cbu = p.cbu_cvu
 			WHERE uf.id_consorcio = @id_consorcio
 			  AND YEAR(p.fecha) = @anio
@@ -328,7 +328,7 @@ BEGIN
 				FROM fin.EstadoDeCuenta ec
 				JOIN fin.Vista_UfYConsorcio uf
 					ON uf.id_uni_func=ec.id_uni_func
-				JOIN adm.Propietario p
+				JOIN adm.Vista_Propietario p
 					ON p.id_prop=uf.id_prop
 				WHERE uf.id_consorcio=@id_consorcio
 					AND (@piso IS NULL  OR uf.piso=@piso)

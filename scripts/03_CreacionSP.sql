@@ -57,6 +57,7 @@ BEGIN
 
 	-- Si el propietario existe, lo actualizamos
 	IF EXISTS (SELECT 1 from adm.Vista_Propietario Prop where Prop.dni = @dni)
+	BEGIN
 		UPDATE adm.Propietario
         SET nombre = @nombre,
             apellido = @apellido,
@@ -64,6 +65,17 @@ BEGIN
             telefono = @telefono_cifrado,
             cbu = @cbu_cifrado
         WHERE CONVERT(INT, CONVERT(NVARCHAR(10), DecryptByKey(dni))) = @dni;
+		-- También actualizamos el CBU en su Unidad Funcional
+		DECLARE @id_prop INT = (
+			SELECT id_prop
+			FROM adm.Propietario
+			WHERE CONVERT(INT, CONVERT(NVARCHAR(10), DecryptByKey(dni))) = @dni
+		);
+
+		UPDATE adm.UnidadFuncional
+		SET cbu = @cbu_cifrado
+		WHERE id_prop = @id_prop
+	END
 	ELSE
 		INSERT INTO adm.Propietario(nombre, apellido, dni, email, telefono, cbu)
 			VALUES(@nombre_formateado, @apellido_formateado, @dni_cifrado, @email_formateado, @telefono_cifrado, @cbu_cifrado)
@@ -102,6 +114,7 @@ BEGIN
 
 	-- Si el inquilino existe, lo actualizamos
 	IF EXISTS (SELECT 1 from adm.Vista_Inquilino Inq where Inq.dni = @dni)
+	BEGIN
 		UPDATE adm.Inquilino
         SET nombre = @nombre,
             apellido = @apellido,
@@ -109,6 +122,18 @@ BEGIN
             telefono = @telefono_cifrado,
             cbu = @cbu_cifrado
         WHERE CONVERT(INT, CONVERT(NVARCHAR(10), DecryptByKey(dni))) = @dni;
+
+		-- También actualizamos el CBU en su Unidad Funcional
+		DECLARE @id_inq INT = (
+			SELECT id_inq
+			FROM adm.Inquilino
+			WHERE CONVERT(INT, CONVERT(NVARCHAR(10), DecryptByKey(dni))) = @dni
+		);
+
+		UPDATE adm.UnidadFuncional
+		SET cbu = @cbu_cifrado
+		WHERE id_inq = @id_inq;
+	END
 	ELSE
 		INSERT INTO adm.Inquilino(nombre, apellido, dni, email, telefono, cbu)
 			VALUES(@nombre_formateado, @apellido_formateado, @dni_cifrado, @email_formateado, @telefono_cifrado, @cbu_cifrado)
