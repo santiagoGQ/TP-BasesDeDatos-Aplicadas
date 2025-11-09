@@ -12,7 +12,7 @@
 USE COM2900_G04
 GO
 
--- Creación de roles
+-- CreaciÃ³n de roles
 CREATE ROLE Rol_AdministrativoGeneral;
 CREATE ROLE Rol_AdministrativoBancario;
 CREATE ROLE Rol_AdministrativoOperativo;
