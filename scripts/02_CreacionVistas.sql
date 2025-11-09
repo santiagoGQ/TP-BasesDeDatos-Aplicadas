@@ -14,6 +14,72 @@ USE COM2900_G04
 GO
 
 ---------CREACION DE LAS VISTAS---------
+CREATE OR ALTER VIEW adm.Vista_Proveedor
+as
+SELECT 
+    id_proveedor,
+    razon_social, 
+    motivo, 
+    id_consorcio, 
+    CONVERT(NVARCHAR(50), DecryptByKey(cuenta)) AS cuenta 
+    from adm.Proveedor
+GO
+
+CREATE OR ALTER VIEW adm.Vista_Propietario
+as
+SELECT 
+    id_prop, 
+    nombre, 
+    apellido, 
+    CONVERT(INT, CONVERT(NVARCHAR(10), DecryptByKey(dni))) as dni, 
+    email, 
+    CONVERT(INT, CONVERT(NVARCHAR(15), DecryptByKey(telefono))) as telefono, 
+    CONVERT(CHAR(22), CONVERT(NVARCHAR(22), DecryptByKey(cbu))) as cbu 
+    from adm.Propietario
+GO
+
+CREATE OR ALTER VIEW adm.Vista_Inquilino
+as
+SELECT 
+    id_inq, 
+    nombre, 
+    apellido, 
+    CONVERT(INT, CONVERT(NVARCHAR(10), DecryptByKey(dni))) as dni, 
+    email, 
+    CONVERT(INT, CONVERT(NVARCHAR(15), DecryptByKey(telefono))) as telefono, 
+    CONVERT(CHAR(22), CONVERT(NVARCHAR(22), DecryptByKey(cbu))) as cbu
+    from adm.Inquilino
+GO
+
+CREATE OR ALTER VIEW adm.Vista_UnidadFuncional
+as
+SELECT 
+    id_uni_func, 
+    id_inq, 
+    id_prop,
+    id_consorcio,
+    total_m2,
+    piso,
+    depto,
+    coeficiente,
+    CONVERT(CHAR(22), CONVERT(NVARCHAR(22), DecryptByKey(cbu))) as cbu,
+    baulera_m2,
+    cochera_m2
+    from adm.UnidadFuncional
+GO
+
+CREATE OR ALTER VIEW fin.Vista_Pago
+as
+SELECT 
+    id_pago,
+    id_uni_func,
+    fecha,
+    CONVERT(CHAR(22), CONVERT(NVARCHAR(22), DecryptByKey(cbu_cvu))) as cbu_cvu,
+    monto,
+    asociado
+    from fin.Pago
+GO
+
 CREATE OR ALTER VIEW fin.Vista_GastosPorExpensa
 AS
 SELECT *,
@@ -143,8 +209,11 @@ SELECT
     uf.cbu,
     uf.baulera_m2,
     uf.cochera_m2
-FROM adm.UnidadFuncional uf inner join adm.Consorcio cons on cons.id_consorcio = uf.id_consorcio
+FROM adm.Vista_UnidadFuncional uf inner join adm.Consorcio cons on cons.id_consorcio = uf.id_consorcio
 GO
+
+
+
 
 -- SELECT * FROM fin.Vista_GastosPorExpensa
 -- SELECT * FROM fin.Vista_UfYConsorcio where id_consorcio=1

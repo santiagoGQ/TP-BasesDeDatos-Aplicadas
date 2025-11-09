@@ -153,10 +153,14 @@ BEGIN
             SET @cochera_m2 = 0;
 
         -- Crear la Unidad Funcional
+        OPEN SYMMETRIC KEY ClaveSimetricaDatos DECRYPTION BY CERTIFICATE CertificadoCifrado;
+
+        DECLARE @cbu_cifrado VARBINARY(256) = EncryptByKey(Key_GUID('ClaveSimetricaDatos'), CAST(@cbu AS NVARCHAR(22)))
         INSERT INTO adm.UnidadFuncional
             (id_consorcio, id_inq, id_prop, total_m2, piso, depto, coeficiente, cbu, baulera_m2, cochera_m2)
         VALUES
-            (@id_consorcio, @id_inq, @id_prop, @total_m2, @piso, @depto, @coef, @cbu, @baulera_m2, @cochera_m2);
+            (@id_consorcio, @id_inq, @id_prop, @total_m2, @piso, @depto, @coef, @cbu_cifrado, @baulera_m2, @cochera_m2);
+        CLOSE SYMMETRIC KEY ClaveSimetricaDatos;
 
         SET @i += 1;
     END;
@@ -310,10 +314,14 @@ BEGIN
         )
 
         --Insercion de valores a la tabla temporal
+        OPEN SYMMETRIC KEY ClaveSimetricaDatos DECRYPTION BY CERTIFICATE CertificadoCifrado;
+
         INSERT INTO @ufs (id_uni_func, cbu)
         SELECT id_uni_func, cbu
-        FROM adm.UnidadFuncional
+        FROM adm.Vista_UnidadFuncional
         WHERE id_consorcio = @id_consorcio
+        
+        CLOSE SYMMETRIC KEY ClaveSimetricaDatos;
 
         SET @total_uni_func = (SELECT COUNT(*) FROM @ufs)
 
