@@ -287,10 +287,21 @@ BEGIN
 			RAISERROR('No existe consorcio con ese id.',16,1)
 			RETURN
 		END
-		DECLARE @fecha_expensa DATE = DATEADD(DAY, -1, adm.ObtenerPrimerDiaDelMes(@mes)) -- Expensa al dia siguiente al ultimo dia del mes que acaba de terminar. Si la expensa es de Agosto, entonces la fecha de la expensa es al 01/9.
-		DECLARE @primer_vencimiento DATE = DATEADD(DAY, 5, @fecha_expensa) -- Primer vencimiento al 5
-		DECLARE @segundo_vencimiento DATE = DATEADD(DAY, 5, @primer_vencimiento) -- Primer vencimiento al 10
 
+		DECLARE @fecha_expensa DATE = DATEADD(DAY, -1, adm.ObtenerPrimerDiaDelMes(@mes));
+		DECLARE @primer_vencimiento DATE = DATEADD(DAY, 5, @fecha_expensa);
+		DECLARE @segundo_vencimiento DATE = DATEADD(DAY, 5, @primer_vencimiento);
+
+		-- Buscamos que la fecha de primer vencimiento no caiga en un feriado. Si lo es, le agregamos un dia y volvemos a preguntar.
+		WHILE EXISTS (SELECT 1 FROM tempdb.##Feriados WHERE fecha = @primer_vencimiento)
+		BEGIN
+			SET @primer_vencimiento = DATEADD(DAY, 1, @primer_vencimiento);
+		END;
+		-- Lo mismo para la segunda fecha de vencimiento.
+		WHILE EXISTS (SELECT 1 FROM tempdb.##Feriados WHERE fecha = @segundo_vencimiento)
+		BEGIN
+			SET @segundo_vencimiento = DATEADD(DAY, 1, @segundo_vencimiento);
+		END;
 		INSERT INTO adm.Expensa(id_consorcio,fechaGenerado,fechaPrimerVenc,fechaSegVenc)
 			VALUES (@id_consorcio, @fecha_expensa, @primer_vencimiento, @segundo_vencimiento)
 		SET @id_expensa = SCOPE_IDENTITY();
