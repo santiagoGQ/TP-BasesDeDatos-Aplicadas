@@ -303,7 +303,7 @@ BEGIN
 
 		IF @top IS NULL
 		BEGIN
-			SET @top=5
+			SET @top=3
 		END
 
 		IF @top <1
@@ -339,6 +339,7 @@ BEGIN
 			c.apellido+', '+c.nombre AS Propietario,
 			c.dni,c.email, c.telefono, c.deuda, c.piso
 		FROM CTE_Deuda c
+		WHERE c.deuda > 0
 		ORDER BY c.deuda ASC
 		FOR XML PATH('Propietario'), ROOT('TopMorosos'),ELEMENTS;
 	END TRY

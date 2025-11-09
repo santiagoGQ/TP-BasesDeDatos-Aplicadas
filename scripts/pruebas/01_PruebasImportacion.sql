@@ -40,8 +40,3 @@ exec fin.GenerarExpensa '2025', '3', 'Unzue'
 exec fin.GenerarExpensa '2025', '4', 'Unzue'
 exec fin.GenerarExpensa '2025', '5', 'Unzue'
 go
-
-exec fin.GenerarExpensa '2025', '3', 'Pereyra Iraola'
-exec fin.GenerarExpensa '2025', '4', 'Pereyra Iraola'
-exec fin.GenerarExpensa '2025', '5', 'Pereyra Iraola'
-go

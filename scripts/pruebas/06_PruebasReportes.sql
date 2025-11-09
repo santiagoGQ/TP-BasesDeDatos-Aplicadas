@@ -11,6 +11,9 @@
 --Cambia a COM2900_G04
 USE COM2900_G04
 GO
+-- Ponemos lenguaje en español para que el pivot de los meses funcione.
+SET LANGUAGE Spanish
+GO
 
 ----------------------REPORTE 1----------------------
 --Objetivo: verificar ingresos/egresos semanales del consorcio.
@@ -54,11 +57,11 @@ GO
 --SALIDA EN XML
 
 --Todos los pisos
-EXEC rep.Cinco_TopMora @id_consorcio=2,@top=5
+EXEC rep.Cinco_TopMora @id_consorcio=6,@top=5
 GO
 
 --Solo 1er piso
-EXEC rep.Cinco_TopMora @id_consorcio=2,@piso='1',@top=5
+EXEC rep.Cinco_TopMora @id_consorcio=6,@piso='1',@top=5
 GO
 
 ----------------------REPORTE 6----------------------
