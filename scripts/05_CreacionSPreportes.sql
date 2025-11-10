@@ -260,19 +260,26 @@ BEGIN
 		   GROUP BY YEAR(e.fechaGenerado), MONTH(e.fechaGenerado), DATENAME(MONTH, e.fechaGenerado))
 
 		--
-		SELECT TOP (@top)
-			ISNULL(i.Anio, e.Anio) AS Anio,
-			ISNULL(i.NombreMes, e.NombreMes) AS Mes,
-			ISNULL(i.TotalIngresos, 0) AS TotalIngresos,
-			ISNULL(e.TotalEgresos, 0) AS TotalEgresos,
-			(ISNULL(i.TotalIngresos, 0) - ISNULL(e.TotalEgresos, 0)) AS Diferencia,
-			AVG(ISNULL(i.TotalIngresos, 0)) OVER() AS PromedioIngresos,
-			AVG(ISNULL(e.TotalEgresos, 0)) OVER() AS PromedioEgresos
-		FROM CTE_Ingresos i
-		FULL JOIN CTE_Egresos e
-			ON i.Anio=e.Anio AND i.Mes=e.Mes
-		ORDER BY (ISNULL(i.TotalIngresos, 0) + ISNULL(e.TotalEgresos, 0)) DESC
-		FOR XML PATH('Mes'), ROOT('TopMeses'),ELEMENTS;
+		SELECT
+			(
+				SELECT TOP (@top)
+					i.Anio,
+					i.NombreMes AS Mes,
+					i.TotalIngresos
+				FROM CTE_Ingresos i
+				ORDER BY i.TotalIngresos DESC
+				FOR XML PATH('MesIngreso'), ROOT('TopMesesIngresos'), ELEMENTS, TYPE
+			),
+			(
+				SELECT TOP (@top)
+					e.Anio,
+					e.NombreMes AS Mes,
+					e.TotalEgresos
+				FROM CTE_Egresos e
+				ORDER BY e.TotalEgresos DESC
+				FOR XML PATH('MesEgreso'), ROOT('TopMesesEgresos'), ELEMENTS, TYPE
+			)
+		FOR XML PATH('TopMeses'), ELEMENTS;
 	END TRY
 	BEGIN CATCH
 		PRINT('Error al generar el reporte: ' + ERROR_MESSAGE())
