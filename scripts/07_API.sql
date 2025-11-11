@@ -19,7 +19,7 @@ RECONFIGURE;
 EXEC sp_configure 'xp_cmdshell', 1;
 GO
 
--- Este SP realiza un GET a https://api.argentinadatos.com/v1/feriados/2025 y trae todos los feriados del año 2025.
+-- Este SP realiza un GET a https://api.argentinadatos.com/v1/feriados/2025 y trae todos los feriados del aÃ±o 2025.
 CREATE OR ALTER PROCEDURE adm.TraerFeriadosArgentinos
 AS
 BEGIN

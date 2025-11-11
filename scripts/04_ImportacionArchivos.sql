@@ -156,7 +156,7 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE adm.ImportarProveedores ---- Todo: implementar mensaje de error si el consorcio no existe sin dropear toda la ejecucion
+CREATE OR ALTER PROCEDURE adm.ImportarProveedores
     @ruta_archivo NVARCHAR(255)
 AS
 BEGIN

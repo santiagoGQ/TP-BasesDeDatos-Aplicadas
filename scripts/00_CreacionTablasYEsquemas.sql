@@ -40,7 +40,7 @@ GO
 
 --Crea la db
 IF DB_ID('COM2900_G04') IS NULL
-	CREATE DATABASE COM2900_G04 COLLATE Latin1_General_CI_AS; -- (Santi) TODO: creo que cambiaría a CS_AS
+	CREATE DATABASE COM2900_G04 COLLATE Latin1_General_CI_AS;
 GO
 
 --Cambia a COM2900_G04
@@ -154,7 +154,7 @@ BEGIN
         id_prop INT IDENTITY(1,1),
         nombre NVARCHAR(30) NOT NULL,
         apellido NVARCHAR(30) NOT NULL,
-        dni VARBINARY(256) NOT NULL, --TODO Agregamos Unique?
+        dni VARBINARY(256) NOT NULL,
         email NVARCHAR(50) NOT NULL,
         telefono VARBINARY(256) NOT NULL,
         cbu VARBINARY(256) NOT NULL,
@@ -169,7 +169,7 @@ BEGIN
         id_inq INT IDENTITY(1,1),
         nombre NVARCHAR(30) NOT NULL,
         apellido NVARCHAR(30) NOT NULL,
-        dni VARBINARY(256) NOT NULL, --TODO Agregamos Unique?
+        dni VARBINARY(256) NOT NULL,
         email NVARCHAR(50) NOT NULL,
         telefono VARBINARY(256) NOT NULL,
         cbu VARBINARY(256) NOT NULL,
