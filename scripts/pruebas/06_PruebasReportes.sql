@@ -18,15 +18,15 @@ GO
 OPEN SYMMETRIC KEY ClaveSimetricaDatos DECRYPTION BY CERTIFICATE CertificadoCifrado;
 
 ----------------------REPORTE 1----------------------
---Objetivo: verificar ingresos/egresos semanales del consorcio.
---Resultado esperado: semanas del 2025 (de expensas del consorcio 1) con TotalIngresos, TotalEgresos, promedio semanal y acumulado.
+--Objetivo: Verificar recaudacion del consorcio semanalmente.
+--Resultado esperado: Semanas del 2025 (de expensas del consorcio 1) con TotalSemanal, PromedioSemanal y Acumulado. Entre abril y junio.
 --Parametros de entrada: id_consorcio, anio, mes_desde, mes_hasta
 EXEC rep.Uno_FlujoSemanal @id_consorcio=1,@anio=2025,@mes_desde=4,@mes_hasta=6
 GO
 
 ----------------------REPORTE 2----------------------
---Objetivo: pivot que muestra por cada UF de un consorcio: montos pagados mes a mes del año especificado.
---Resultado esperado: total pagado por cada UF del consorcio 2 por cada mes del 2025
+--Objetivo: Pivot que muestra por cada UF de un consorcio: montos pagados mes a mes del año especificado.
+--Resultado esperado: Total pagado por cada UF del consorcio 2 por cada mes del 2025
 --Parametros de entrada: id_consorcio, anio, id_uf (opcional)
 
 --Todas las uf
@@ -38,23 +38,23 @@ EXEC rep.Dos_TotalUFporMes @id_consorcio=2,@anio=2025,@id_uf=32
 GO
 
 ----------------------REPORTE 3----------------------
---Objetivo: mostrar la recaudacion de un consorcio por procedencia: Ordinario, Extraordinario u Otros
---Resultado esperado: procedencias de la recaudacion del consorcio 3 durante el 2025
+--Objetivo: Mostrar la recaudacion de un consorcio por procedencia: Ordinario, Extraordinario u Otros
+--Resultado esperado: Procedencias de la recaudacion del consorcio 3 durante el 2025
 --Parametros de entrada: id_consorcio, anio, mes_desde, mes_hasta
 EXEC rep.Tres_RecaudacionPorProcedencia 6,2025,1,12
 GO
 
 ----------------------REPORTE 4----------------------
---Objetivo: Obtener los 5 meses con mayores ingresos y egresos (en conjunto) de un consorcio.
---Resultado esperado: XML con los meses, ingresos, egresos y diferencia total durante el año 2025 del consorcio 2.
+--Objetivo: Obtener los 5 meses con mayores ingresos y los 5 meses con mayores egresos de un consorcio.
+--Resultado esperado: XML con los meses de ingresos y meses de egresos durante el año 2025 del consorcio 6.
 --Parametros de entrada: id_consorcio, anio, top (los X primeros)
 --SALIDA EN XML
 EXEC rep.Cuatro_TopMeses 6,2025,5
 GO
 
 ----------------------REPORTE 5----------------------
---Objetivo: obtener el top 3 de propietarios con mayor deuda
---Resultado esperado: XML con los datos de contacto de cada propietario del top del consorcio 2
+--Objetivo: Obtener el top 3 de propietarios con mayor deuda
+--Resultado esperado: XML con los datos de contacto de cada propietario del top del consorcio 6
 --Parametros de entrada: id_consorcio, piso, top (los X primeros)
 --SALIDA EN XML
 
@@ -67,8 +67,8 @@ EXEC rep.Cinco_TopMora @id_consorcio=6,@piso='1',@top=5
 GO
 
 ----------------------REPORTE 6----------------------
---Objetivo: mostrar las fechas de pagos y la cantidad de días entre ellos por UF
---Resultado esperado: dias de diferencia entre pagos consecutivos del consorcio 2 en el año 2025
+--Objetivo: Mostrar las fechas de pagos y la cantidad de días entre ellos por UF
+--Resultado esperado: Dias de diferencia entre pagos consecutivos del consorcio 2 en el año 2025
 --Parametros de entrada: id_consorcio, anio, piso
 
 --Todos los pisos
